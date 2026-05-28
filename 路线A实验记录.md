@@ -684,51 +684,563 @@ test_size_medium_1to5pct_worst_best.png
 test_size_large_gt5pct_worst_best.png
 ```
 
-后续需要继续完成 A3 和 A4，观察 Boundary Loss 是否能进一步改善肿瘤边界分割效果。
+后续已继续完成 A3 和 A4，可在最终分组分析中统一比较 Boundary Loss 和 Attention Gate 的影响。
 
 ---
 
 ## A3：U-Net + Boundary Loss
 
-状态：未开始。
+状态：已完成 A3 训练、验证集评估、独立测试集评估、小数据集过拟合和分组可视化。
 
-计划：
+### 1. 实验目的
+
+A3 在 A1 普通 U-Net 的基础上加入 Boundary Loss，不改变模型结构，重点观察边界约束是否能提升分割效果。
+
+与 A1/A2 的区别：
 
 ```text
 U-Net + BCE Loss + Dice Loss + Boundary Loss
 ```
 
-目标：
+其中 Boundary Loss 用预测 mask 和真实 mask 的边界图计算 Dice 类型损失，使模型更关注肿瘤轮廓区域。
+
+---
+
+### 2. 运行命令
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/train_a3_unet_boundary.py --image-size 128 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --out-dir outputs/a3/full
+```
+
+---
+
+### 3. 实验结果
+
+训练设置：
 
 ```text
-观察边界损失是否能改善肿瘤轮廓分割效果。
+model           = U-Net
+loss            = BCE Loss + Dice Loss + Boundary Loss
+boundary_weight = 0.2
+image_size      = 128
+base_channels   = 16
+batch_size      = 8
+epochs          = 20
+train_pairs     = 3147
+val_pairs       = 786
+device          = cuda
+```
+
+最好验证集结果出现在第 18 个 epoch：
+
+```text
+best_epoch = 18
+val_loss   = 0.1795
+val_dice   = 0.8043
+val_iou    = 0.7228
+```
+
+最后一轮结果：
+
+```text
+epoch      = 20
+train_dice = 0.7977
+train_iou  = 0.7148
+val_dice   = 0.7663
+val_iou    = 0.6900
+```
+
+验证集 Dice 变化趋势：
+
+```text
+epoch 1  : val_dice = 0.5711
+epoch 5  : val_dice = 0.6731
+epoch 10 : val_dice = 0.7730
+epoch 15 : val_dice = 0.7896
+epoch 18 : val_dice = 0.8043
+epoch 20 : val_dice = 0.7663
+```
+
+---
+
+### 4. 与 A1/A2 对比
+
+| 实验 | 模型 | val Dice | val IoU | test Dice | test IoU |
+|---|---|---:|---:|---:|---:|
+| A1 | U-Net | 0.7938 | 0.7082 | 0.7930 | 0.7078 |
+| A2 | Attention U-Net | 0.7851 | 0.7011 | 0.7937 | 0.7087 |
+| A3 | U-Net + Boundary Loss | 0.8043 | 0.7228 | 0.8075 | 0.7271 |
+
+A3 在验证集和独立测试集上均超过 A1/A2，说明边界损失在当前实验设置下带来了正向提升。
+
+---
+
+### 5. 小数据集过拟合测试
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/overfit_a3_unet_boundary.py --image-size 128 --base-channels 16 --batch-size 8 --num-samples 8 --epochs 200 --boundary-weight 0.2 --out-dir outputs/a3/overfit_8
+```
+
+最终结果：
+
+```text
+epoch      = 200
+train_loss = 0.4183
+train_dice = 0.9881
+train_iou  = 0.9767
+eval_loss  = 0.4186
+eval_dice  = 0.9888
+eval_iou   = 0.9779
+```
+
+结论：
+
+```text
+U-Net + Boundary Loss 可以在 8 张训练图像上过拟合到 Dice ≈ 0.99。
+```
+
+---
+
+### 6. 验证集分组分析
+
+验证集整体结果：
+
+```text
+n_samples = 786
+val_dice  = 0.8043
+val_iou   = 0.7228
+```
+
+按肿瘤类型：
+
+| 肿瘤类型 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| glioma | 231 | 0.6439 | 0.5398 |
+| meningioma | 259 | 0.9114 | 0.8588 |
+| pituitary | 296 | 0.8331 | 0.7436 |
+
+按视角：
+
+| 视角 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| axial | 251 | 0.7864 | 0.7064 |
+| coronal | 271 | 0.7982 | 0.7078 |
+| sagittal | 264 | 0.8246 | 0.7503 |
+
+按肿瘤大小：
+
+| 肿瘤大小 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| small < 1% | 306 | 0.7549 | 0.6668 |
+| medium 1%-5% | 458 | 0.8377 | 0.7604 |
+| large > 5% | 22 | 0.7599 | 0.6778 |
+
+---
+
+### 7. 输出文件
+
+```text
+outputs/a3/full/history.csv
+outputs/a3/full/checkpoints/best_unet_boundary.pt
+outputs/a3/full/figures/sample_prediction.png
+outputs/a3/full/figures/training_curves.png
+outputs/a3/full/readable_checkpoint/
+outputs/a3/full/eval_val/
+outputs/a3/full/eval_test/
+outputs/a3/overfit_8/
+```
+
+---
+
+### 8. 独立测试集评估与分组分析
+
+使用 A3 的 `best_unet_boundary.pt` 在 `segmentation_task/test` 上进行独立测试集评估。
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/evaluate_checkpoint.py --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --out-dir outputs/a3/full/eval_test
+
+/home/wxy/python_project/.venv/bin/python scripts/generate_group_visuals.py --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --out-dir outputs/a3/full/eval_test/group_visuals
+```
+
+测试集整体结果：
+
+```text
+n_samples = 860
+test_dice = 0.8075
+test_iou  = 0.7271
+device    = cuda
+```
+
+#### 8.1 按肿瘤类型分组
+
+测试集结果：
+
+| 肿瘤类型 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| glioma | 254 | 0.6619 | 0.5619 |
+| meningioma | 306 | 0.9099 | 0.8552 |
+| pituitary | 300 | 0.8245 | 0.7340 |
+
+#### 8.2 按成像视角分组
+
+测试集结果：
+
+| 视角 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| axial | 346 | 0.8016 | 0.7252 |
+| coronal | 257 | 0.8041 | 0.7193 |
+| sagittal | 257 | 0.8168 | 0.7348 |
+
+#### 8.3 按肿瘤大小分组
+
+测试集结果：
+
+| 肿瘤大小 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| small < 1% | 346 | 0.7542 | 0.6638 |
+| medium 1%-5% | 454 | 0.8423 | 0.7667 |
+| large > 5% | 60 | 0.8423 | 0.7809 |
+
+A3 在测试集上取得当前 A1/A2/A3 中最高的整体 Dice 和 IoU。分组结果中，小肿瘤仍明显低于中、大肿瘤；胶质瘤仍是三类肿瘤中最难分割的一类。
+
+输出文件：
+
+```text
+outputs/a3/full/eval_test/metrics.csv
+outputs/a3/full/eval_test/per_sample_metrics.csv
+outputs/a3/full/eval_test/group_metrics.csv
+outputs/a3/full/eval_test/test_examples_worst_best.png
+outputs/a3/full/eval_test/group_visuals/
 ```
 
 ---
 
 ## A4：Attention U-Net + Boundary Loss
 
-状态：未开始。
+状态：已完成。
 
-计划：
+### 1. 实验目的
+
+A4 将 A2 的 Attention U-Net 和 A3 的 Boundary Loss 组合起来，观察注意力机制与边界约束是否能够叠加提升分割效果。
+
+与前面实验的关系：
+
+```text
+A1：U-Net
+A2：Attention U-Net
+A3：U-Net + Boundary Loss
+A4：Attention U-Net + Boundary Loss
+```
+
+A4 的模型和损失函数为：
 
 ```text
 Attention U-Net + BCE Loss + Dice Loss + Boundary Loss
 ```
 
-目标：
+---
 
-```text
-作为路线 A 的核心模型，与 A1/A2/A3 进行对比。
+### 2. 运行命令
+
+正式训练：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/train_a4_attention_unet_boundary.py --image-size 128 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --out-dir outputs/a4/full
+```
+
+验证集评估：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/evaluate_checkpoint.py --checkpoint outputs/a4/full/checkpoints/best_attention_unet_boundary.pt --model attention_unet --eval-split val --image-size 128 --base-channels 16 --batch-size 8 --out-dir outputs/a4/full/eval_val
+```
+
+独立测试集评估：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/evaluate_checkpoint.py --checkpoint outputs/a4/full/checkpoints/best_attention_unet_boundary.pt --model attention_unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --out-dir outputs/a4/full/eval_test
+```
+
+测试集分组可视化：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/generate_group_visuals.py --checkpoint outputs/a4/full/checkpoints/best_attention_unet_boundary.pt --model attention_unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --out-dir outputs/a4/full/eval_test/group_visuals
+```
+
+小数据集过拟合：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/overfit_a4_attention_unet_boundary.py --image-size 128 --base-channels 16 --batch-size 8 --num-samples 8 --epochs 200 --boundary-weight 0.2 --out-dir outputs/a4/overfit_8
 ```
 
 ---
 
-## A5：小目标分组分析
+### 3. 实验结果
 
-状态：未开始。
+训练设置：
 
-计划：
+```text
+model           = Attention U-Net
+loss            = BCE Loss + Dice Loss + Boundary Loss
+boundary_weight = 0.2
+image_size      = 128
+base_channels   = 16
+batch_size      = 8
+epochs          = 20
+train_pairs     = 3147
+val_pairs       = 786
+device          = cuda
+```
+
+最好验证集结果出现在第 18 个 epoch：
+
+```text
+best_epoch = 18
+val_loss   = 0.1876
+val_dice   = 0.7934
+val_iou    = 0.7110
+```
+
+最后一轮结果：
+
+```text
+epoch      = 20
+train_loss = 0.1856
+train_dice = 0.7965
+train_iou  = 0.7133
+val_loss   = 0.1894
+val_dice   = 0.7918
+val_iou    = 0.7072
+```
+
+验证集 Dice 变化趋势：
+
+```text
+epoch 1  : val_dice = 0.5258
+epoch 5  : val_dice = 0.6757
+epoch 10 : val_dice = 0.7408
+epoch 15 : val_dice = 0.7680
+epoch 18 : val_dice = 0.7934
+epoch 20 : val_dice = 0.7918
+```
+
+---
+
+### 4. 与 A1/A2/A3 对比
+
+| 实验 | 模型 | val Dice | val IoU | test Dice | test IoU |
+|---|---|---:|---:|---:|---:|
+| A1 | U-Net | 0.7938 | 0.7082 | 0.7930 | 0.7078 |
+| A2 | Attention U-Net | 0.7851 | 0.7011 | 0.7937 | 0.7087 |
+| A3 | U-Net + Boundary Loss | 0.8043 | 0.7228 | 0.8075 | 0.7271 |
+| A4 | Attention U-Net + Boundary Loss | 0.7934 | 0.7110 | 0.7923 | 0.7093 |
+
+A4 可以正常训练，但当前设置下没有超过 A3。说明在本实验配置中，Boundary Loss 对普通 U-Net 的提升最明显，而 Attention Gate 与 Boundary Loss 的简单组合没有带来额外整体收益。
+
+---
+
+### 5. 小数据集过拟合测试
+
+最终结果：
+
+```text
+epoch      = 200
+train_loss = 0.4724
+train_dice = 0.9799
+train_iou  = 0.9608
+eval_loss  = 0.4720
+eval_dice  = 0.9812
+eval_iou   = 0.9634
+```
+
+结论：
+
+```text
+Attention U-Net + Boundary Loss 可以在 8 张训练图像上过拟合到 Dice ≈ 0.98。
+```
+
+这说明 A4 的模型结构、损失函数和训练流程能够正常学习给定 image-mask 的对应关系。
+
+---
+
+### 6. 独立测试集评估与分组分析
+
+测试集整体结果：
+
+```text
+n_samples = 860
+test_dice = 0.7923
+test_iou  = 0.7093
+device    = cuda
+```
+
+#### 6.1 按肿瘤类型分组
+
+测试集结果：
+
+| 肿瘤类型 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| glioma | 254 | 0.6362 | 0.5376 |
+| meningioma | 306 | 0.9088 | 0.8505 |
+| pituitary | 300 | 0.8036 | 0.7082 |
+
+#### 6.2 按成像视角分组
+
+测试集结果：
+
+| 视角 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| axial | 346 | 0.7959 | 0.7135 |
+| coronal | 257 | 0.7987 | 0.7148 |
+| sagittal | 257 | 0.7786 | 0.6953 |
+
+#### 6.3 按肿瘤大小分组
+
+测试集结果：
+
+| 肿瘤大小 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| small < 1% | 346 | 0.7497 | 0.6519 |
+| medium 1%-5% | 454 | 0.8218 | 0.7484 |
+| large > 5% | 60 | 0.8039 | 0.7321 |
+
+A4 的分组趋势与前面实验一致：胶质瘤仍然低于脑膜瘤和垂体瘤，小肿瘤仍然低于中等肿瘤。相比 A3，A4 在 glioma、pituitary、sagittal 和 large 组上均偏低。
+
+---
+
+### 7. 输出文件
+
+```text
+outputs/a4/full/history.csv
+outputs/a4/full/checkpoints/best_attention_unet_boundary.pt
+outputs/a4/full/figures/sample_prediction.png
+outputs/a4/full/figures/training_curves.png
+outputs/a4/full/readable_checkpoint/
+outputs/a4/full/eval_val/
+outputs/a4/full/eval_test/
+outputs/a4/full/eval_test/group_visuals/
+outputs/a4/overfit_8/
+```
+
+---
+
+### 8. 阶段结论
+
+A4 已完成完整训练、验证集评估、独立测试集评估、小数据集过拟合和测试集分组可视化。
+
+主要结论：
+
+- A4 能够正常学习，小数据集过拟合 Dice 达到 0.9812；
+- A4 测试集 Dice / IoU 为 0.7923 / 0.7093；
+- A4 没有超过 A3，当前路线 A 中整体最优仍是 A3；
+- 后续 A5 应重点围绕 A1/A2/A3/A4 的分组差异展开，尤其比较 glioma 和 small tumor。
+
+---
+
+## A5：A1-A4 分组综合分析
+
+状态：已完成。
+
+### 1. 实验目的
+
+A5 不训练新模型，而是汇总 A1/A2/A3/A4 在独立测试集上的整体指标和分组指标，回答以下问题：
+
+- 哪个模型整体最好；
+- 哪个模型对不同肿瘤类型最好；
+- 哪个模型对不同成像视角最好；
+- 哪个模型对小 / 中 / 大肿瘤最好；
+- Boundary Loss 和 Attention Gate 在分组层面是否真的带来收益。
+
+---
+
+### 2. 运行命令
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/summarize_a5_group_analysis.py --out-dir outputs/a5/summary
+```
+
+该脚本读取 A1-A4 的测试集 `metrics.csv` 和 `group_metrics.csv`，并生成：
+
+```text
+outputs/a5/summary/overall_test_metrics.csv
+outputs/a5/summary/group_metrics_long.csv
+outputs/a5/summary/best_by_group.csv
+outputs/a5/summary/*_pivot.csv
+outputs/a5/summary/figures/
+outputs/a5/summary/README.md
+```
+
+---
+
+### 3. A1-A4 独立测试集整体对比
+
+| 实验 | 模型 | 样本数 | test Dice | test IoU |
+|---|---|---:|---:|---:|
+| A1 | U-Net | 860 | 0.7930 | 0.7078 |
+| A2 | Attention U-Net | 860 | 0.7937 | 0.7087 |
+| A3 | U-Net + Boundary Loss | 860 | 0.8075 | 0.7271 |
+| A4 | Attention U-Net + Boundary Loss | 860 | 0.7923 | 0.7093 |
+
+整体结论：
+
+```text
+A3 是 A1-A4 中整体测试集表现最好的模型。
+```
+
+A4 没有超过 A3，说明在当前固定超参数下，Attention Gate 与 Boundary Loss 的组合没有形成叠加收益。
+
+---
+
+### 4. 按肿瘤类型分组
+
+| 肿瘤类型 | 样本数 | A1 Dice | A2 Dice | A3 Dice | A4 Dice | Dice 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| glioma | 254 | 0.6482 | 0.6360 | 0.6619 | 0.6362 | A3 |
+| meningioma | 306 | 0.8998 | 0.8926 | 0.9099 | 0.9088 | A3 |
+| pituitary | 300 | 0.8047 | 0.8246 | 0.8245 | 0.8036 | A2 |
+
+| 肿瘤类型 | 样本数 | A1 IoU | A2 IoU | A3 IoU | A4 IoU | IoU 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| glioma | 254 | 0.5446 | 0.5317 | 0.5619 | 0.5376 | A3 |
+| meningioma | 306 | 0.8374 | 0.8313 | 0.8552 | 0.8505 | A3 |
+| pituitary | 300 | 0.7113 | 0.7310 | 0.7340 | 0.7082 | A3 |
+
+结论：
+
+- glioma 是最难分割的肿瘤类型，所有模型在该组 Dice 都明显低于 meningioma 和 pituitary；
+- A3 在 glioma 和 meningioma 上同时取得最高 Dice / IoU；
+- pituitary 的 Dice 由 A2 略高，但 IoU 仍是 A3 最好，二者差距极小。
+
+---
+
+### 5. 按成像视角分组
+
+| 视角 | 样本数 | A1 Dice | A2 Dice | A3 Dice | A4 Dice | Dice 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| axial | 346 | 0.7907 | 0.7878 | 0.8016 | 0.7959 | A3 |
+| coronal | 257 | 0.7955 | 0.7941 | 0.8041 | 0.7987 | A3 |
+| sagittal | 257 | 0.7912 | 0.7991 | 0.8168 | 0.7786 | A3 |
+
+| 视角 | 样本数 | A1 IoU | A2 IoU | A3 IoU | A4 IoU | IoU 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| axial | 346 | 0.7059 | 0.7023 | 0.7252 | 0.7135 | A3 |
+| coronal | 257 | 0.7060 | 0.7070 | 0.7193 | 0.7148 | A3 |
+| sagittal | 257 | 0.7093 | 0.7161 | 0.7348 | 0.6953 | A3 |
+
+结论：
+
+```text
+A3 在 axial / coronal / sagittal 三个视角上均为最优。
+```
+
+这说明 Boundary Loss 的提升不是只来自某一个特定视角，而是在不同成像方向上都比较稳定。
+
+---
+
+### 6. 按肿瘤大小分组
 
 根据真实 mask 面积占图像比例，将样本分为：
 
@@ -738,10 +1250,61 @@ Attention U-Net + BCE Loss + Dice Loss + Boundary Loss
 大肿瘤：> 5%
 ```
 
-分别计算 Dice 和 IoU。
+| 肿瘤大小 | 样本数 | A1 Dice | A2 Dice | A3 Dice | A4 Dice | Dice 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| small < 1% | 346 | 0.7589 | 0.7434 | 0.7542 | 0.7497 | A1 |
+| medium 1%-5% | 454 | 0.8142 | 0.8232 | 0.8423 | 0.8218 | A3 |
+| large > 5% | 60 | 0.8190 | 0.8516 | 0.8423 | 0.8039 | A2 |
 
-目标：
+| 肿瘤大小 | 样本数 | A1 IoU | A2 IoU | A3 IoU | A4 IoU | IoU 最优 |
+|---|---:|---:|---:|---:|---:|---|
+| small < 1% | 346 | 0.6649 | 0.6501 | 0.6638 | 0.6519 | A1 |
+| medium 1%-5% | 454 | 0.7334 | 0.7423 | 0.7667 | 0.7484 | A3 |
+| large > 5% | 60 | 0.7492 | 0.7799 | 0.7809 | 0.7321 | A3 |
+
+结论：
+
+- small tumor 仍是难点，A3 整体最优但在 small 组没有超过 A1；
+- medium tumor 是 A3 提升最明显的大小组；
+- large tumor 样本数只有 60，Dice 最优为 A2，IoU 最优为 A3，解释时应注意样本数较少带来的波动。
+
+---
+
+### 7. 输出文件
 
 ```text
-分析模型在不同大小肿瘤上的分割表现，重点观察小肿瘤是否容易漏分。
+outputs/a5/summary/overall_test_metrics.csv
+outputs/a5/summary/group_metrics_long.csv
+outputs/a5/summary/best_by_group.csv
+outputs/a5/summary/tumor_mean_dice_pivot.csv
+outputs/a5/summary/tumor_mean_iou_pivot.csv
+outputs/a5/summary/view_mean_dice_pivot.csv
+outputs/a5/summary/view_mean_iou_pivot.csv
+outputs/a5/summary/size_group_mean_dice_pivot.csv
+outputs/a5/summary/size_group_mean_iou_pivot.csv
+outputs/a5/summary/README.md
+outputs/a5/summary/figures/overall_test_metrics.png
+outputs/a5/summary/figures/tumor_dice_comparison.png
+outputs/a5/summary/figures/tumor_iou_comparison.png
+outputs/a5/summary/figures/view_dice_comparison.png
+outputs/a5/summary/figures/view_iou_comparison.png
+outputs/a5/summary/figures/size_group_dice_comparison.png
+outputs/a5/summary/figures/size_group_iou_comparison.png
 ```
+
+---
+
+### 8. 最终阶段结论
+
+```text
+A3：U-Net + Boundary Loss 是当前最优模型。
+```
+
+更具体地说：
+
+- Attention U-Net 单独使用时，相比 U-Net 只有很小提升；
+- Boundary Loss 单独加入 U-Net 时，带来最明确的整体提升；
+- Attention U-Net + Boundary Loss 没有超过 U-Net + Boundary Loss；
+- glioma 始终是最难分割的肿瘤类型；
+- small tumor 并未因为 Boundary Loss 明显改善，后续若调参，应优先关注小目标；
+- A5 支持后续做少量调参，例如 A3 的 `boundary_weight` 或针对 small tumor 的增强策略。

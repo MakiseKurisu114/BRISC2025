@@ -1,0 +1,22 @@
+{
+  "checkpoint": "outputs/a4/full/checkpoints/best_attention_unet_boundary.pt",
+  "model": "attention_unet",
+  "best_epoch": 18,
+  "saved_val_dice": 0.7934143308437231,
+  "total_params": 1964653,
+  "trainable_params": 1964653,
+  "args": {
+    "data_root": ".",
+    "image_size": 128,
+    "batch_size": 8,
+    "epochs": 20,
+    "lr": 0.001,
+    "base_channels": 16,
+    "boundary_weight": 0.2,
+    "val_ratio": 0.2,
+    "limit_train": null,
+    "num_workers": 0,
+    "out_dir": "outputs/a4/full",
+    "seed": 42
+  }
+}

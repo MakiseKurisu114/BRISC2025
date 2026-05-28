@@ -16,9 +16,12 @@ U-Net baseline
 ```text
 A1：U-Net baseline
 A2：Attention U-Net
+A3：U-Net + Boundary Loss
+A4：Attention U-Net + Boundary Loss
+A5：A1-A4 分组综合分析
 ```
 
-A3 / A4 / A5 后续继续补充。
+路线 A 主体实验已完成。
 
 ---
 
@@ -103,16 +106,64 @@ eval_dice = 0.9912
 eval_iou  = 0.9828
 ```
 
-### A1 与 A2 对比
+### A3：U-Net + Boundary Loss
 
-| 实验 | 模型 | 验证集 Dice | 测试集 Dice |
-|---|---|---:|---:|
-| A1 | U-Net | 0.7938 | 0.7930 |
-| A2 | Attention U-Net | 0.7851 | 0.7937 |
+模型：
+
+```text
+U-Net + BCE Loss + Dice Loss + Boundary Loss
+```
+
+主要结果：
+
+| 数据集 | Dice | IoU |
+|---|---:|---:|
+| 验证集 | 0.8043 | 0.7228 |
+| 测试集 | 0.8075 | 0.7271 |
+
+A3 小数据集过拟合测试：
+
+```text
+8 张图像
+eval_dice = 0.9888
+eval_iou  = 0.9779
+```
+
+### A4：Attention U-Net + Boundary Loss
+
+模型：
+
+```text
+Attention U-Net + BCE Loss + Dice Loss + Boundary Loss
+```
+
+主要结果：
+
+| 数据集 | Dice | IoU |
+|---|---:|---:|
+| 验证集 | 0.7934 | 0.7110 |
+| 测试集 | 0.7923 | 0.7093 |
+
+A4 小数据集过拟合测试：
+
+```text
+8 张图像
+eval_dice = 0.9812
+eval_iou  = 0.9634
+```
+
+### A1 / A2 / A3 / A4 对比
+
+| 实验 | 模型 | 验证集 Dice | 验证集 IoU | 测试集 Dice | 测试集 IoU |
+|---|---|---:|---:|---:|---:|
+| A1 | U-Net | 0.7938 | 0.7082 | 0.7930 | 0.7078 |
+| A2 | Attention U-Net | 0.7851 | 0.7011 | 0.7937 | 0.7087 |
+| A3 | U-Net + Boundary Loss | 0.8043 | 0.7228 | 0.8075 | 0.7271 |
+| A4 | Attention U-Net + Boundary Loss | 0.7934 | 0.7110 | 0.7923 | 0.7093 |
 
 结论：
 
-> A2 在测试集上相比 A1 略有提升，但幅度非常小，整体可以认为与 A1 基本持平。单独加入 Attention Gate 对整体 Dice / IoU 的提升有限，后续需要继续尝试 Boundary Loss 来改善边界和小目标分割。
+> A2 在测试集上相比 A1 略有提升，但幅度非常小，整体可以认为与 A1 基本持平。A3 在验证集和独立测试集上均超过 A1/A2。A4 可以正常训练和过拟合小数据，但在当前设置下没有超过 A3，说明 Attention Gate 与 Boundary Loss 的简单叠加未带来额外整体收益。
 
 ---
 
@@ -144,6 +195,55 @@ A1 测试集分组结果示例：
 - 不同成像视角之间差距较小；
 - 这些结果支持后续继续做 Boundary Loss 和小目标分析。
 
+A3 测试集分组结果：
+
+| 分组 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| glioma | 254 | 0.6619 | 0.5619 |
+| meningioma | 306 | 0.9099 | 0.8552 |
+| pituitary | 300 | 0.8245 | 0.7340 |
+| axial | 346 | 0.8016 | 0.7252 |
+| coronal | 257 | 0.8041 | 0.7193 |
+| sagittal | 257 | 0.8168 | 0.7348 |
+| small < 1% | 346 | 0.7542 | 0.6638 |
+| medium 1%-5% | 454 | 0.8423 | 0.7667 |
+| large > 5% | 60 | 0.8423 | 0.7809 |
+
+A4 测试集分组结果：
+
+| 分组 | 样本数 | Dice | IoU |
+|---|---:|---:|---:|
+| glioma | 254 | 0.6362 | 0.5376 |
+| meningioma | 306 | 0.9088 | 0.8505 |
+| pituitary | 300 | 0.8036 | 0.7082 |
+| axial | 346 | 0.7959 | 0.7135 |
+| coronal | 257 | 0.7987 | 0.7148 |
+| sagittal | 257 | 0.7786 | 0.6953 |
+| small < 1% | 346 | 0.7497 | 0.6519 |
+| medium 1%-5% | 454 | 0.8218 | 0.7484 |
+| large > 5% | 60 | 0.8039 | 0.7321 |
+
+A5 综合分组结论：
+
+| 分组 | 样本数 | Dice 最优 | 最优 Dice | IoU 最优 | 最优 IoU |
+|---|---:|---|---:|---|---:|
+| glioma | 254 | A3 | 0.6619 | A3 | 0.5619 |
+| meningioma | 306 | A3 | 0.9099 | A3 | 0.8552 |
+| pituitary | 300 | A2 | 0.8246 | A3 | 0.7340 |
+| axial | 346 | A3 | 0.8016 | A3 | 0.7252 |
+| coronal | 257 | A3 | 0.8041 | A3 | 0.7193 |
+| sagittal | 257 | A3 | 0.8168 | A3 | 0.7348 |
+| small < 1% | 346 | A1 | 0.7589 | A1 | 0.6649 |
+| medium 1%-5% | 454 | A3 | 0.8423 | A3 | 0.7667 |
+| large > 5% | 60 | A2 | 0.8516 | A3 | 0.7809 |
+
+主要观察：
+
+- A3 是整体测试集 Dice / IoU 最优模型；
+- A3 在 glioma、meningioma、全部视角和 medium tumor 上表现最好；
+- small tumor 组 A1 最高，说明 Boundary Loss 并没有在当前设置下稳定改善小目标；
+- A4 没有超过 A3，说明 Attention Gate 与 Boundary Loss 的简单叠加没有带来额外收益。
+
 ---
 
 ## 4. 项目结构
@@ -159,9 +259,14 @@ A1 测试集分组结果示例：
 │   ├── generate_group_visuals.py
 │   ├── overfit_a1_unet.py
 │   ├── overfit_a2_attention_unet.py
+│   ├── overfit_a3_unet_boundary.py
+│   ├── overfit_a4_attention_unet_boundary.py
 │   ├── plot_history.py
+│   ├── summarize_a5_group_analysis.py
 │   ├── train_a1_unet.py
-│   └── train_a2_attention_unet.py
+│   ├── train_a2_attention_unet.py
+│   ├── train_a3_unet_boundary.py
+│   └── train_a4_attention_unet_boundary.py
 ├── src/
 │   ├── dataset.py
 │   ├── losses.py
@@ -172,6 +277,9 @@ A1 测试集分组结果示例：
 ├── outputs/
 │   ├── a1/
 │   ├── a2/
+│   ├── a3/
+│   ├── a4/
+│   ├── a5/
 │   └── README.md
 ├── 医学图像实验路线.md
 └── 路线A实验记录.md
@@ -261,7 +369,57 @@ GPU：NVIDIA GeForce RTX 3060 Laptop GPU
   --out-dir outputs/a2/overfit_8
 ```
 
-### 6.6 独立测试集评估
+### 6.6 训练 A3：U-Net + Boundary Loss
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/train_a3_unet_boundary.py \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --epochs 20 \
+  --boundary-weight 0.2 \
+  --out-dir outputs/a3/full
+```
+
+### 6.7 A3 小数据集过拟合测试
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/overfit_a3_unet_boundary.py \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --num-samples 8 \
+  --epochs 200 \
+  --boundary-weight 0.2 \
+  --out-dir outputs/a3/overfit_8
+```
+
+### 6.8 训练 A4：Attention U-Net + Boundary Loss
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/train_a4_attention_unet_boundary.py \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --epochs 20 \
+  --boundary-weight 0.2 \
+  --out-dir outputs/a4/full
+```
+
+### 6.9 A4 小数据集过拟合测试
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/overfit_a4_attention_unet_boundary.py \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --num-samples 8 \
+  --epochs 200 \
+  --boundary-weight 0.2 \
+  --out-dir outputs/a4/overfit_8
+```
+
+### 6.10 独立测试集评估
 
 A1：
 
@@ -289,7 +447,35 @@ A2：
   --out-dir outputs/a2/full/eval_test
 ```
 
-### 6.7 生成分组可视化
+A3：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/evaluate_checkpoint.py \
+  --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt \
+  --model unet \
+  --eval-split test \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --out-dir outputs/a3/full/eval_test
+```
+
+A4：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/evaluate_checkpoint.py \
+  --checkpoint outputs/a4/full/checkpoints/best_attention_unet_boundary.pt \
+  --model attention_unet \
+  --eval-split test \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --out-dir outputs/a4/full/eval_test
+```
+
+### 6.11 生成分组可视化
+
+A1：
 
 ```bash
 /home/wxy/python_project/.venv/bin/python scripts/generate_group_visuals.py \
@@ -300,6 +486,39 @@ A2：
   --base-channels 16 \
   --batch-size 8 \
   --out-dir outputs/a1/full/eval_test/group_visuals
+```
+
+A3：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/generate_group_visuals.py \
+  --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt \
+  --model unet \
+  --eval-split test \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --out-dir outputs/a3/full/eval_test/group_visuals
+```
+
+A4：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/generate_group_visuals.py \
+  --checkpoint outputs/a4/full/checkpoints/best_attention_unet_boundary.pt \
+  --model attention_unet \
+  --eval-split test \
+  --image-size 128 \
+  --base-channels 16 \
+  --batch-size 8 \
+  --out-dir outputs/a4/full/eval_test/group_visuals
+```
+
+### 6.12 生成 A5 分组综合分析
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/summarize_a5_group_analysis.py \
+  --out-dir outputs/a5/summary
 ```
 
 ---
@@ -328,6 +547,42 @@ outputs/a2/full/
 ├── eval_val/
 ├── eval_test/
 └── readable_checkpoint/
+```
+
+A3：
+
+```text
+outputs/a3/full/
+├── checkpoints/best_unet_boundary.pt
+├── history.csv
+├── figures/training_curves.png
+├── eval_val/
+├── eval_test/
+└── readable_checkpoint/
+```
+
+A4：
+
+```text
+outputs/a4/full/
+├── checkpoints/best_attention_unet_boundary.pt
+├── history.csv
+├── figures/training_curves.png
+├── eval_val/
+├── eval_test/
+└── readable_checkpoint/
+```
+
+A5：
+
+```text
+outputs/a5/summary/
+├── overall_test_metrics.csv
+├── group_metrics_long.csv
+├── best_by_group.csv
+├── *_pivot.csv
+├── figures/
+└── README.md
 ```
 
 其中：
@@ -370,17 +625,15 @@ README.md
 
 ## 9. 后续计划
 
-后续路线：
+后续可选工作：
 
 ```text
-A3：U-Net + BCE + Dice + Boundary Loss
-A4：Attention U-Net + BCE + Dice + Boundary Loss
-A5：小 / 中 / 大肿瘤分组对比分析
+调参：A3 boundary_weight / A4 learning rate 与 epochs
 ```
 
 重点观察：
 
-- Boundary Loss 是否改善肿瘤边界；
-- A4 是否优于 A1 / A2；
-- 小肿瘤分割效果是否提升；
-- 胶质瘤分割效果是否改善。
+- A3 的 boundary_weight 是否还能进一步提升；
+- A4 是否需要更低学习率或更多 epoch；
+- small tumor 组为什么 A1 最高；
+- glioma 是否需要单独增强或类别针对性分析。

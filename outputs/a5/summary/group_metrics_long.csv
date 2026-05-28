@@ -1,0 +1,37 @@
+experiment,model,group_type,group,n,mean_dice,mean_iou,group_label
+A1,U-Net,tumor,glioma,254,0.6482163914210874,0.5446139750000427,glioma
+A1,U-Net,tumor,meningioma,306,0.899795877766315,0.8374458783332603,meningioma
+A1,U-Net,tumor,pituitary,300,0.8046854040158992,0.7113405347064837,pituitary
+A1,U-Net,view,axial,346,0.7907497425550928,0.7059368702791028,axial
+A1,U-Net,view,coronal,257,0.7954989008786273,0.7059971828810502,coronal
+A1,U-Net,view,sagittal,257,0.7912353882192568,0.7093272985016894,sagittal
+A1,U-Net,size_group,large_>5%,60,0.8190039434780677,0.7491878715033332,large > 5%
+A1,U-Net,size_group,medium_1-5%,454,0.814214744911043,0.7334139509445102,medium 1%-5%
+A1,U-Net,size_group,small_<1%,346,0.7589491110517941,0.6649460774940058,small < 1%
+A2,Attention U-Net,tumor,glioma,254,0.6359917971667419,0.5317352873195069,glioma
+A2,Attention U-Net,tumor,meningioma,306,0.8925643074874227,0.8313435997868895,meningioma
+A2,Attention U-Net,tumor,pituitary,300,0.8245515668450782,0.7310129521349062,pituitary
+A2,Attention U-Net,view,axial,346,0.7878049374005832,0.7023495859614133,axial
+A2,Attention U-Net,view,coronal,257,0.7941298838494275,0.7070052532544028,coronal
+A2,Attention U-Net,view,sagittal,257,0.7990668332105938,0.7161186121610287,sagittal
+A2,Attention U-Net,size_group,large_>5%,60,0.8516152980439632,0.7798863191170263,large > 5%
+A2,Attention U-Net,size_group,medium_1-5%,454,0.8231615610713108,0.7423348532920984,medium 1%-5%
+A2,Attention U-Net,size_group,small_<1%,346,0.7434098208555328,0.650123085586071,small < 1%
+A3,U-Net + Boundary Loss,tumor,glioma,254,0.6618821483863282,0.5618727994095284,glioma
+A3,U-Net + Boundary Loss,tumor,meningioma,306,0.9099419521557311,0.8551877607426964,meningioma
+A3,U-Net + Boundary Loss,tumor,pituitary,300,0.8244674674602573,0.734042577216809,pituitary
+A3,U-Net + Boundary Loss,view,axial,346,0.8015558699275838,0.7251690023452917,axial
+A3,U-Net + Boundary Loss,view,coronal,257,0.8041014916289303,0.7192856411801537,coronal
+A3,U-Net + Boundary Loss,view,sagittal,257,0.81676314764311,0.734828927655866,sagittal
+A3,U-Net + Boundary Loss,size_group,large_>5%,60,0.8423466534664233,0.7809195122371118,large > 5%
+A3,U-Net + Boundary Loss,size_group,medium_1-5%,454,0.8422704214170795,0.7667214539669363,medium 1%-5%
+A3,U-Net + Boundary Loss,size_group,small_<1%,346,0.7542455860014994,0.6637838386332724,small < 1%
+A4,Attention U-Net + Boundary Loss,tumor,glioma,254,0.6362124158316979,0.5376083968997388,glioma
+A4,Attention U-Net + Boundary Loss,tumor,meningioma,306,0.9087513951042764,0.8504706067970338,meningioma
+A4,Attention U-Net + Boundary Loss,tumor,pituitary,300,0.8036089237627089,0.7081651889380515,pituitary
+A4,Attention U-Net + Boundary Loss,view,axial,346,0.7959387817645874,0.7134751427891464,axial
+A4,Attention U-Net + Boundary Loss,view,coronal,257,0.7986555353616648,0.7147810816762697,coronal
+A4,Attention U-Net + Boundary Loss,view,sagittal,257,0.7786352784960209,0.6952722092529006,sagittal
+A4,Attention U-Net + Boundary Loss,size_group,large_>5%,60,0.8038693721726242,0.732099429736257,large > 5%
+A4,Attention U-Net + Boundary Loss,size_group,medium_1-5%,454,0.8218498272460112,0.7484024092735413,medium 1%-5%
+A4,Attention U-Net + Boundary Loss,size_group,small_<1%,346,0.7497299819419826,0.6518654207499371,small < 1%
