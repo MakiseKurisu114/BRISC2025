@@ -1,0 +1,2 @@
+eval_split,mean_dice,mean_iou,n_samples
+val,0.7647147094360506,0.6848894034070198,786

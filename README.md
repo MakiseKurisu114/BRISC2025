@@ -244,6 +244,29 @@ A5 综合分组结论：
 - small tumor 组 A1 最高，说明 Boundary Loss 并没有在当前设置下稳定改善小目标；
 - A4 没有超过 A3，说明 Attention Gate 与 Boundary Loss 的简单叠加没有带来额外收益。
 
+A3 高分辨率调参：
+
+| 实验 | image_size | test Dice | test IoU | small Dice | small IoU |
+|---|---:|---:|---:|---:|---:|
+| A3 original | 128 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
+| A3 image_size 192 | 192 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
+| A3 image_size 256 | 256 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
+| A3 small oversampling w=1.5 | 128 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
+| A3 small oversampling w=2.0 | 128 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
+| A3 small oversampling w=3 | 128 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+
+结论：单纯提高输入分辨率没有改善 small tumor，整体性能也下降。后续更建议尝试 small tumor 采样、loss 权重或更长训练。
+
+small tumor oversampling 存在 tradeoff：`w=3.0` 的 small 组最好，但整体下降；`w=2.0` 的 overall 折中最好，但 small 未超过原 A3。
+
+A3 阈值扫描：
+
+```text
+threshold = 0.30 / 0.35 / 0.40 / 0.45 / 0.50
+```
+
+扫描 A3 original 和 A3 small oversampling w=3 后发现，降低阈值没有提升 small tumor；两者都是默认 `threshold=0.50` 的 small Dice / IoU 最好。因此 small tumor 的问题不主要是后处理阈值过高。
+
 ---
 
 ## 4. 项目结构

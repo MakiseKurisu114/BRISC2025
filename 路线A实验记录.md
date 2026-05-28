@@ -1308,3 +1308,253 @@ A3：U-Net + Boundary Loss 是当前最优模型。
 - glioma 始终是最难分割的肿瘤类型；
 - small tumor 并未因为 Boundary Loss 明显改善，后续若调参，应优先关注小目标；
 - A5 支持后续做少量调参，例如 A3 的 `boundary_weight` 或针对 small tumor 的增强策略。
+
+---
+
+## A3 调参：提高输入分辨率
+
+状态：已完成第一轮 high-resolution tuning。
+
+### 1. 调参目的
+
+A5 显示 A3 是整体最优模型，但 small tumor 组并没有超过 A1：
+
+```text
+A1 small Dice = 0.7589
+A3 small Dice = 0.7542
+```
+
+因此尝试提高输入分辨率，验证如下假设：
+
+```text
+image_size=128 时小肿瘤像素太少，提高到 192/256 可能保留更多小目标细节。
+```
+
+### 2. 调参设置
+
+固定其他参数，只改变 `image_size`：
+
+```text
+model           = U-Net
+loss            = BCE Loss + Dice Loss + Boundary Loss
+boundary_weight = 0.2
+base_channels   = 16
+epochs          = 20
+seed            = 42
+```
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python -u scripts/train_a3_unet_boundary.py --image-size 192 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --out-dir outputs/a3_tuning/image_size_192/full
+
+/home/wxy/python_project/.venv/bin/python -u scripts/train_a3_unet_boundary.py --image-size 256 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --out-dir outputs/a3_tuning/image_size_256_bs8/full
+```
+
+### 3. 结果对比
+
+| 实验 | image_size | batch_size | test Dice | test IoU | small Dice | small IoU |
+|---|---:|---:|---:|---:|---:|---:|
+| A3 original | 128 | 8 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
+| A3 image_size 192 | 192 | 8 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
+| A3 image_size 256 | 256 | 8 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
+| A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
+| A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
+| A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+
+按肿瘤大小的完整结果：
+
+| 实验 | small Dice | medium Dice | large Dice | small IoU | medium IoU | large IoU |
+|---|---:|---:|---:|---:|---:|---:|
+| A3 original | 0.7542 | 0.8423 | 0.8423 | 0.6638 | 0.7667 | 0.7809 |
+| image_size 192 | 0.7447 | 0.8039 | 0.8053 | 0.6555 | 0.7264 | 0.7285 |
+| image_size 256 | 0.7414 | 0.7944 | 0.8141 | 0.6521 | 0.7120 | 0.7355 |
+| small oversampling w=1.5 | 0.7575 | 0.8044 | 0.7530 | 0.6699 | 0.7271 | 0.6855 |
+| small oversampling w=2.0 | 0.7487 | 0.8265 | 0.8496 | 0.6558 | 0.7500 | 0.7867 |
+| small oversampling w=3 | 0.7811 | 0.7963 | 0.7657 | 0.6890 | 0.7136 | 0.6860 |
+
+### 4. 结论
+
+本轮调参没有支持“单纯提高输入分辨率可以改善 small tumor”的假设。
+
+观察：
+
+- `image_size=192` 和 `image_size=256` 的整体测试集 Dice / IoU 均低于原始 A3；
+- small tumor Dice / IoU 也均低于原始 A3；
+- 256 能够在 batch size 8 下运行，没有显存溢出，但 20 个 epoch 下收敛明显更慢；
+- 当前 small tumor 的难点可能不只是输入分辨率，也可能与样本采样、类别不均衡、阈值、loss 权重或训练轮数有关。
+
+---
+
+## A3 调参：small tumor oversampling
+
+状态：已完成 w=1.5 / 2.0 / 3.0 三组。
+
+### 1. 调参目的
+
+由于 small tumor 组在 A5 中没有从 Boundary Loss 中稳定获益，因此尝试让训练阶段更频繁看到小目标样本。
+
+实现方式：
+
+```text
+WeightedRandomSampler
+small threshold = mask area < 1%
+small sample weight = 3.0
+```
+
+训练集采样变化：
+
+```text
+small_count = 1215
+non_small_count = 1932
+原始 small 占比 = 0.3861
+加权后 small 期望采样概率 = 0.6536
+```
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python -u scripts/train_a3_unet_boundary_small_oversampling.py --image-size 128 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --small-threshold 0.01 --small-sample-weight 3.0 --out-dir outputs/a3_tuning/small_oversampling_w3/full
+```
+
+### 2. 结果
+
+| 实验 | test Dice | test IoU | small Dice | small IoU | medium Dice | large Dice |
+|---|---:|---:|---:|---:|---:|---:|
+| A3 original | 0.8075 | 0.7271 | 0.7542 | 0.6638 | 0.8423 | 0.8423 |
+| small oversampling w=3 | 0.7886 | 0.7024 | 0.7811 | 0.6890 | 0.7963 | 0.7657 |
+
+### 3. 结论
+
+small tumor oversampling 明显提升了 small tumor：
+
+```text
+small Dice: 0.7542 -> 0.7811
+small IoU : 0.6638 -> 0.6890
+```
+
+但整体 test Dice / IoU 下降：
+
+```text
+test Dice: 0.8075 -> 0.7886
+test IoU : 0.7271 -> 0.7024
+```
+
+说明 oversampling 方向是有效的，但权重 `3.0` 可能过强，模型对小目标更敏感的同时牺牲了 medium / large tumor 和整体表现。
+
+后续更合理的调参方向：
+
+```text
+small_sample_weight = 1.5 或 2.0
+```
+
+目标是在 small tumor 提升和 overall Dice 之间找到更好的平衡点。
+
+### 4. 温和 oversampling 权重对比
+
+| small_sample_weight | weighted small probability | test Dice | test IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|---:|
+| 1.5 | 0.4854 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
+| 2.0 | 0.5571 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
+| 3.0 | 0.6536 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+
+观察：
+
+- `w=1.5` 只带来 small 组轻微提升，但整体下降明显；
+- `w=2.0` 是三组 oversampling 中整体 test Dice / IoU 最好的折中，但 small 组没有超过原 A3；
+- `w=3.0` 的 small 组提升最明显，但牺牲了 overall、medium 和 large；
+- oversampling 方向有效，但单独依靠采样权重很难同时提升 overall 和 small。
+
+当前推荐：
+
+```text
+如果目标是 overall：保留原 A3。
+如果目标是 small tumor：使用 w=3.0。
+如果目标是折中：w=2.0 可作为候选，但仍不如原 A3 overall。
+```
+
+---
+
+## A3 调参：阈值扫描
+
+状态：已完成。
+
+### 1. 调参目的
+
+验证 small tumor 是否因为默认二值化阈值 `threshold=0.50` 太高而被直接抹掉。
+
+扫描阈值：
+
+```text
+0.30 / 0.35 / 0.40 / 0.45 / 0.50
+```
+
+扫描对象：
+
+```text
+A3 original
+A3 small oversampling w=3
+```
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python -u scripts/sweep_thresholds.py --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 --out-dir outputs/a3_tuning/threshold_sweep/a3_original
+
+/home/wxy/python_project/.venv/bin/python -u scripts/sweep_thresholds.py --checkpoint outputs/a3_tuning/small_oversampling_w3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 --out-dir outputs/a3_tuning/threshold_sweep/a3_small_oversampling_w3
+```
+
+### 2. A3 original 结果
+
+| threshold | overall Dice | overall IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|
+| 0.30 | 0.8060 | 0.7251 | 0.7506 | 0.6593 |
+| 0.35 | 0.8064 | 0.7256 | 0.7517 | 0.6607 |
+| 0.40 | 0.8067 | 0.7261 | 0.7530 | 0.6624 |
+| 0.45 | 0.8069 | 0.7263 | 0.7536 | 0.6630 |
+| 0.50 | 0.8069 | 0.7263 | 0.7542 | 0.6638 |
+
+### 3. A3 small oversampling w=3 结果
+
+| threshold | overall Dice | overall IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|
+| 0.30 | 0.7877 | 0.7006 | 0.7776 | 0.6838 |
+| 0.35 | 0.7878 | 0.7010 | 0.7786 | 0.6854 |
+| 0.40 | 0.7881 | 0.7014 | 0.7797 | 0.6867 |
+| 0.45 | 0.7882 | 0.7018 | 0.7805 | 0.6880 |
+| 0.50 | 0.7881 | 0.7018 | 0.7811 | 0.6890 |
+
+### 4. 结论
+
+降低阈值到 0.30-0.45 没有改善 small tumor。两个 checkpoint 都是在默认 `threshold=0.50` 下 small tumor 指标最高。
+
+这说明：
+
+```text
+small tumor 的主要问题不只是 threshold=0.50 太保守。
+```
+
+更可能的原因是模型对小目标的定位、置信度和训练样本平衡仍不足。下一步更建议继续尝试更温和的 oversampling 权重，例如：
+
+```text
+small_sample_weight = 1.5 / 2.0
+```
+
+后续更建议尝试：
+
+```text
+1. 针对 small tumor 的采样或 oversampling
+2. 调 boundary_weight，而不是单纯提高分辨率
+3. 尝试更长训练 epoch，并配合早停
+4. 针对 small tumor 单独做阈值分析
+```
+
+输出目录：
+
+```text
+outputs/a3_tuning/summary.csv
+outputs/a3_tuning/README.md
+outputs/a3_tuning/image_size_192/full/
+outputs/a3_tuning/image_size_256_bs8/full/
+outputs/a3_tuning/small_oversampling_w3/full/
+```

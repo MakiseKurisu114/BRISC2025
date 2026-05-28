@@ -1,0 +1,2 @@
+small_threshold,small_sample_weight,small_count,non_small_count,small_fraction,weighted_small_probability
+0.01,3.0,1215,1932,0.38608198284080075,0.6535771920387305

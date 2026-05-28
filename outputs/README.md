@@ -282,3 +282,40 @@ small tumor：A1 最优
 large tumor Dice：A2 最优
 large tumor IoU：A3 最优
 ```
+
+## A3 Tuning：输入分辨率调参
+
+```text
+outputs/a3_tuning/
+```
+
+该目录保存 A3 在更高输入分辨率下的调参结果，未覆盖原始 A3。
+
+实验设置：
+
+```text
+model           = U-Net
+loss            = BCE Loss + Dice Loss + Boundary Loss
+boundary_weight = 0.2
+base_channels   = 16
+epochs          = 20
+```
+
+结果：
+
+| 实验 | image_size | batch_size | test Dice | test IoU | small Dice | small IoU |
+|---|---:|---:|---:|---:|---:|---:|
+| A3 original | 128 | 8 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
+| A3 image_size 192 | 192 | 8 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
+| A3 image_size 256 | 256 | 8 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
+| A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
+| A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
+| A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+
+结论：
+
+```text
+单纯提高 image_size 到 192/256 没有改善 small tumor，整体性能反而下降。
+small tumor oversampling 存在 tradeoff：w=3.0 的 small 组最好，w=2.0 的 overall 折中最好。
+threshold 0.30-0.50 扫描显示，降低阈值没有改善 small tumor，默认 0.50 仍最好。
+```
