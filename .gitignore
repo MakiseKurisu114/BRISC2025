@@ -1,0 +1,48 @@
+# Python cache / env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / system
+.DS_Store
+.idea/
+.vscode/
+.agents/
+.codex/
+
+# Kaggle / secrets
+kaggle.json
+*.key
+
+# Local dataset files
+classification_task/
+segmentation_task/
+manifest.csv
+manifest.json
+manifest.csv.sha256
+manifest.json.sha256
+
+# Course/private local material
+期末项目.pdf
+
+# Model weights and binary checkpoints
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.onnx
+
+# Checkpoint folders contain binary model weights.
+# Lightweight csv/png outputs are kept trackable.
+outputs/**/checkpoints/

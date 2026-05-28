@@ -1,0 +1,21 @@
+{
+  "checkpoint": "outputs/a2/full/checkpoints/best_attention_unet.pt",
+  "model": "attention_unet",
+  "best_epoch": 19,
+  "saved_val_dice": 0.785124279633917,
+  "total_params": 1964653,
+  "trainable_params": 1964653,
+  "args": {
+    "data_root": ".",
+    "image_size": 128,
+    "batch_size": 8,
+    "epochs": 20,
+    "lr": 0.001,
+    "base_channels": 16,
+    "val_ratio": 0.2,
+    "limit_train": null,
+    "num_workers": 0,
+    "out_dir": "outputs/a2/full",
+    "seed": 42
+  }
+}
