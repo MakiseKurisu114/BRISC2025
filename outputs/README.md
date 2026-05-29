@@ -311,11 +311,18 @@ epochs          = 20
 | A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
 | A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
 | A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+| A3 Focal Tversky w=0.2 | 128 | 8 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
+| A3 Boundary w=0.05 | 128 | 8 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
+| A3 Boundary w=0.1 | 128 | 8 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
+| A3 Boundary w=0.3 | 128 | 8 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
+| A3 Boundary w=0.5 | 128 | 8 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
 
 结论：
 
 ```text
 单纯提高 image_size 到 192/256 没有改善 small tumor，整体性能反而下降。
 small tumor oversampling 存在 tradeoff：w=3.0 的 small 组最好，w=2.0 的 overall 折中最好。
-threshold 0.30-0.50 扫描显示，降低阈值没有改善 small tumor，默认 0.50 仍最好。
+threshold 0.30-0.50 扫描显示，降低阈值没有改善 small tumor。对新最佳 Boundary w=0.5，threshold=0.60 可带来轻微提升。
+Focal Tversky w=0.2 没有提升 small tumor，整体 test Dice / IoU 也低于 A3 original。
+Boundary w=0.5 是当前 overall 最优设置，test Dice / IoU 超过 A3 original，并小幅提升 small tumor。
 ```

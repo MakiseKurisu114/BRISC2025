@@ -63,3 +63,54 @@ class BCEDiceBoundaryLoss(nn.Module):
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         return self.region_loss(logits, targets) + self.boundary_weight * self.boundary_loss(logits, targets)
+
+
+class FocalTverskyLoss(nn.Module):
+    def __init__(self, alpha: float = 0.3, beta: float = 0.7, gamma: float = 0.75, smooth: float = 1.0) -> None:
+        super().__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.smooth = smooth
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        probs = torch.sigmoid(logits)
+        probs = probs.flatten(start_dim=1)
+        targets = targets.flatten(start_dim=1)
+
+        true_pos = (probs * targets).sum(dim=1)
+        false_pos = (probs * (1.0 - targets)).sum(dim=1)
+        false_neg = ((1.0 - probs) * targets).sum(dim=1)
+        tversky = (true_pos + self.smooth) / (
+            true_pos + self.alpha * false_pos + self.beta * false_neg + self.smooth
+        )
+        return torch.pow(1.0 - tversky, self.gamma).mean()
+
+
+class BCEDiceBoundaryFocalTverskyLoss(nn.Module):
+    def __init__(
+        self,
+        bce_weight: float = 0.5,
+        boundary_weight: float = 0.2,
+        focal_tversky_weight: float = 0.2,
+        focal_tversky_alpha: float = 0.3,
+        focal_tversky_beta: float = 0.7,
+        focal_tversky_gamma: float = 0.75,
+    ) -> None:
+        super().__init__()
+        self.region_loss = BCEDiceLoss(bce_weight=bce_weight)
+        self.boundary_loss = BoundaryLoss()
+        self.focal_tversky_loss = FocalTverskyLoss(
+            alpha=focal_tversky_alpha,
+            beta=focal_tversky_beta,
+            gamma=focal_tversky_gamma,
+        )
+        self.boundary_weight = boundary_weight
+        self.focal_tversky_weight = focal_tversky_weight
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        return (
+            self.region_loss(logits, targets)
+            + self.boundary_weight * self.boundary_loss(logits, targets)
+            + self.focal_tversky_weight * self.focal_tversky_loss(logits, targets)
+        )

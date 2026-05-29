@@ -1361,6 +1361,11 @@ seed            = 42
 | A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
 | A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
 | A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+| A3 Focal Tversky w=0.2 | 128 | 8 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
+| A3 Boundary w=0.05 | 128 | 8 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
+| A3 Boundary w=0.1 | 128 | 8 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
+| A3 Boundary w=0.3 | 128 | 8 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
+| A3 Boundary w=0.5 | 128 | 8 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
 
 按肿瘤大小的完整结果：
 
@@ -1372,6 +1377,11 @@ seed            = 42
 | small oversampling w=1.5 | 0.7575 | 0.8044 | 0.7530 | 0.6699 | 0.7271 | 0.6855 |
 | small oversampling w=2.0 | 0.7487 | 0.8265 | 0.8496 | 0.6558 | 0.7500 | 0.7867 |
 | small oversampling w=3 | 0.7811 | 0.7963 | 0.7657 | 0.6890 | 0.7136 | 0.6860 |
+| Focal Tversky w=0.2 | 0.7489 | 0.8307 | 0.8192 | 0.6544 | 0.7537 | 0.7477 |
+| Boundary w=0.05 | 0.7734 | 0.8013 | 0.7904 | 0.6799 | 0.7233 | 0.7149 |
+| Boundary w=0.1 | 0.7525 | 0.8347 | 0.8266 | 0.6596 | 0.7569 | 0.7488 |
+| Boundary w=0.3 | 0.7506 | 0.8299 | 0.8356 | 0.6574 | 0.7536 | 0.7744 |
+| Boundary w=0.5 | 0.7644 | 0.8426 | 0.8487 | 0.6704 | 0.7712 | 0.7819 |
 
 ### 4. 结论
 
@@ -1557,4 +1567,206 @@ outputs/a3_tuning/README.md
 outputs/a3_tuning/image_size_192/full/
 outputs/a3_tuning/image_size_256_bs8/full/
 outputs/a3_tuning/small_oversampling_w3/full/
+```
+
+---
+
+## A3 调参：Focal Tversky Loss
+
+状态：已完成 `focal_tversky_weight=0.2`。
+
+### 1. 调参目的
+
+small tumor 的主要问题不是简单阈值过高，因此在 A3 original 基础上加入 Focal Tversky Loss，更惩罚小病灶漏检。
+
+设置：
+
+```text
+model = U-Net
+loss = BCE Loss + Dice Loss + 0.2 * Boundary Loss + 0.2 * Focal Tversky Loss
+Focal Tversky alpha = 0.3
+Focal Tversky beta  = 0.7
+Focal Tversky gamma = 0.75
+image_size = 128
+batch_size = 8
+epochs = 20
+seed = 42
+```
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/train_a3_unet_focal_tversky.py --data-root . --out-dir outputs/a3_tuning/focal_tversky_w02/full --epochs 20 --image-size 128 --batch-size 8 --boundary-weight 0.2 --focal-tversky-weight 0.2 --focal-tversky-alpha 0.3 --focal-tversky-beta 0.7 --focal-tversky-gamma 0.75
+```
+
+### 2. 结果
+
+训练最佳：
+
+```text
+best_epoch = 20
+val Dice   = 0.7930
+val IoU    = 0.7115
+```
+
+测试集：
+
+| 实验 | test Dice | test IoU | small Dice | small IoU | medium Dice | large Dice |
+|---|---:|---:|---:|---:|---:|---:|
+| A3 original | 0.8075 | 0.7271 | 0.7542 | 0.6638 | 0.8423 | 0.8423 |
+| Focal Tversky w=0.2 | 0.7975 | 0.7140 | 0.7489 | 0.6544 | 0.8307 | 0.8192 |
+
+### 3. 结论
+
+Focal Tversky w=0.2 没有改善 small tumor：
+
+```text
+small Dice: 0.7542 -> 0.7489
+small IoU : 0.6638 -> 0.6544
+```
+
+但整体仍低于 A3 original：
+
+```text
+test Dice: 0.8075 -> 0.7975
+test IoU : 0.7271 -> 0.7140
+```
+
+说明当前 Focal Tversky w=0.2 方向没有带来收益。该阶段综合最优仍是 A3 original；small tumor 单项最优仍是 oversampling w=3。
+
+输出目录：
+
+```text
+outputs/a3_tuning/focal_tversky_w02/full/
+```
+
+---
+
+## A3 调参：Boundary Loss 权重
+
+状态：已完成 `boundary_weight = 0.05 / 0.1 / 0.3 / 0.5`，均使用 GPU 训练。
+
+### 1. 调参目的
+
+A3 original 使用 `boundary_weight=0.2`，整体表现最好，但 small tumor 没有稳定超过 A1。因此尝试重新调整 Boundary Loss 权重，观察边界约束强弱对 overall 和 small tumor 的影响。
+
+固定设置：
+
+```text
+model = U-Net
+loss = BCE Loss + Dice Loss + boundary_weight * Boundary Loss
+image_size = 128
+batch_size = 8
+epochs = 20
+seed = 42
+```
+
+### 2. 结果
+
+| boundary_weight | best val Dice | test Dice | test IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|---:|
+| 0.05 | 0.7841 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
+| 0.1 | 0.7976 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
+| 0.2 original | 0.8043 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
+| 0.3 | 0.8053 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
+| 0.5 | 0.8014 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
+
+### 3. 结论
+
+`boundary_weight=0.5` 是当前新的 overall 最优设置：
+
+```text
+test Dice: 0.8075 -> 0.8120
+test IoU : 0.7271 -> 0.7319
+```
+
+它也小幅提升 small tumor：
+
+```text
+small Dice: 0.7542 -> 0.7644
+small IoU : 0.6638 -> 0.6704
+```
+
+`boundary_weight=0.05` 的 small tumor 更高，但整体 test Dice / IoU 明显下降，因此更像 small 专项权重，不适合作为综合最优模型。
+
+当前结论：
+
+```text
+overall 最优：A3 Boundary w=0.5
+small tumor 单项最优：A3 small oversampling w=3
+综合推荐：A3 Boundary w=0.5
+```
+
+输出目录：
+
+```text
+outputs/a3_tuning/boundary_w005/full/
+outputs/a3_tuning/boundary_w01/full/
+outputs/a3_tuning/boundary_w03/full/
+outputs/a3_tuning/boundary_w05/full/
+```
+
+---
+
+## A3 调参：Boundary w=0.5 阈值扫描
+
+状态：已完成，使用 GPU。
+
+### 1. 调参目的
+
+`boundary_weight=0.5` 已成为新的整体最优模型，因此对该 checkpoint 重新扫描二值化阈值，观察是否能进一步改善 overall 或 small tumor。
+
+扫描阈值：
+
+```text
+0.30 / 0.35 / 0.40 / 0.45 / 0.50 / 0.55 / 0.60
+```
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/sweep_thresholds.py --checkpoint outputs/a3_tuning/boundary_w05/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --data-root . --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 0.55 0.60 --out-dir outputs/a3_tuning/threshold_sweep/a3_boundary_w05
+```
+
+### 2. 结果
+
+| threshold | overall Dice | overall IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|
+| 0.30 | 0.8107 | 0.7298 | 0.7596 | 0.6641 |
+| 0.35 | 0.8111 | 0.7304 | 0.7613 | 0.6662 |
+| 0.40 | 0.8114 | 0.7310 | 0.7627 | 0.6680 |
+| 0.45 | 0.8115 | 0.7312 | 0.7636 | 0.6693 |
+| 0.50 | 0.8116 | 0.7314 | 0.7644 | 0.6704 |
+| 0.55 | 0.8117 | 0.7317 | 0.7655 | 0.6719 |
+| 0.60 | 0.8118 | 0.7320 | 0.7666 | 0.6735 |
+
+### 3. 结论
+
+对 Boundary w=0.5，适当提高阈值到 0.60 可以带来很小的提升：
+
+```text
+overall IoU : 0.7314 -> 0.7320
+small Dice  : 0.7644 -> 0.7666
+small IoU   : 0.6704 -> 0.6735
+```
+
+随后使用 `scripts/evaluate_checkpoint.py --threshold 0.60` 生成了完整测试集评估：
+
+```text
+outputs/a3_tuning/boundary_w05/full/eval_test_thr060/
+```
+
+该目录包含 metrics、per-sample metrics、group metrics、worst/best 可视化和分组可视化。完整评估中的 batch-mean 指标为：
+
+```text
+test Dice = 0.8122
+test IoU  = 0.7324
+```
+
+提升幅度较小，因此主要收益仍来自 `boundary_weight=0.5` 本身。当前不使用小连通域删除，因为项目主要短板是 small tumor，删除小连通域有误删真实病灶的风险。
+
+输出目录：
+
+```text
+outputs/a3_tuning/threshold_sweep/a3_boundary_w05/
 ```

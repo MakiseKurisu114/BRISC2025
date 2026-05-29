@@ -254,8 +254,13 @@ A3 高分辨率调参：
 | A3 small oversampling w=1.5 | 128 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
 | A3 small oversampling w=2.0 | 128 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
 | A3 small oversampling w=3 | 128 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
+| A3 Focal Tversky w=0.2 | 128 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
+| A3 Boundary w=0.05 | 128 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
+| A3 Boundary w=0.1 | 128 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
+| A3 Boundary w=0.3 | 128 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
+| A3 Boundary w=0.5 | 128 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
 
-结论：单纯提高输入分辨率没有改善 small tumor，整体性能也下降。后续更建议尝试 small tumor 采样、loss 权重或更长训练。
+结论：单纯提高输入分辨率没有改善 small tumor，整体性能也下降。Focal Tversky w=0.2 没有提升 small tumor，整体也低于 A3 original。Boundary w=0.5 是当前 overall 最优设置，并小幅提升 small tumor。
 
 small tumor oversampling 存在 tradeoff：`w=3.0` 的 small 组最好，但整体下降；`w=2.0` 的 overall 折中最好，但 small 未超过原 A3。
 
@@ -266,6 +271,14 @@ threshold = 0.30 / 0.35 / 0.40 / 0.45 / 0.50
 ```
 
 扫描 A3 original 和 A3 small oversampling w=3 后发现，降低阈值没有提升 small tumor；两者都是默认 `threshold=0.50` 的 small Dice / IoU 最好。因此 small tumor 的问题不主要是后处理阈值过高。
+
+对新最佳 A3 Boundary w=0.5，继续扫描到 `threshold=0.60` 后，small Dice 从 0.7644 小幅提升到 0.7666，overall IoU 从 0.7314 小幅提升到 0.7320。当前不使用小连通域删除，避免误删真实 small tumor。
+
+完整 `threshold=0.60` 测试集评估已保存到：
+
+```text
+outputs/a3_tuning/boundary_w05/full/eval_test_thr060/
+```
 
 ---
 

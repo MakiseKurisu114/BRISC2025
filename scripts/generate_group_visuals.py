@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--examples-per-group", type=int, default=4)
+    parser.add_argument("--threshold", type=float, default=0.5)
     return parser.parse_args()
 
 
@@ -73,7 +74,7 @@ def size_group(mask: torch.Tensor) -> str:
 
 
 @torch.no_grad()
-def collect_rows(model, loader, device) -> list[dict]:
+def collect_rows(model, loader, device, threshold: float) -> list[dict]:
     model.eval()
     rows = []
     for batch in loader:
@@ -81,10 +82,10 @@ def collect_rows(model, loader, device) -> list[dict]:
         masks = batch["mask"].to(device)
         logits = model(images)
         probs = torch.sigmoid(logits)
-        preds = (probs > 0.5).float()
+        preds = (probs > threshold).float()
 
         for i, name in enumerate(batch["name"]):
-            dice, iou = dice_iou_from_logits(logits[i : i + 1], masks[i : i + 1])
+            dice, iou = dice_iou_from_logits(logits[i : i + 1], masks[i : i + 1], threshold=threshold)
             tumor, view = parse_name(name)
             rows.append(
                 {
@@ -163,7 +164,7 @@ def main() -> None:
     model.load_state_dict(checkpoint["model"])
 
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    rows = collect_rows(model, loader, device)
+    rows = collect_rows(model, loader, device, threshold=args.threshold)
 
     group_specs = [
         ("tumor", ["glioma", "meningioma", "pituitary"]),
@@ -182,7 +183,7 @@ def main() -> None:
             saved.append(out_path)
 
     print(f"device={device}")
-    print(f"eval_split={args.eval_split} samples={len(dataset)}")
+    print(f"eval_split={args.eval_split} threshold={args.threshold} samples={len(dataset)}")
     for path in saved:
         print(f"saved: {path}")
 

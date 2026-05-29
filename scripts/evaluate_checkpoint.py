@@ -48,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--max-visuals", type=int, default=8)
+    parser.add_argument("--threshold", type=float, default=0.5)
     return parser.parse_args()
 
 
@@ -74,7 +75,7 @@ def size_group(mask: torch.Tensor) -> tuple[float, str]:
 
 
 @torch.no_grad()
-def evaluate(model, loader, device):
+def evaluate(model, loader, device, threshold: float):
     model.eval()
     rows = []
     total_dice = 0.0
@@ -84,15 +85,15 @@ def evaluate(model, loader, device):
         images = batch["image"].to(device)
         masks = batch["mask"].to(device)
         logits = model(images)
-        dice, iou = dice_iou_from_logits(logits, masks)
+        dice, iou = dice_iou_from_logits(logits, masks, threshold=threshold)
         total_dice += dice
         total_iou += iou
         n_batches += 1
 
         probs = torch.sigmoid(logits)
-        preds = (probs > 0.5).float()
+        preds = (probs > threshold).float()
         for i, name in enumerate(batch["name"]):
-            sample_dice, sample_iou = dice_iou_from_logits(logits[i : i + 1], masks[i : i + 1])
+            sample_dice, sample_iou = dice_iou_from_logits(logits[i : i + 1], masks[i : i + 1], threshold=threshold)
             tumor, view = parse_name(name)
             area_ratio, area_group = size_group(masks[i])
             rows.append(
@@ -186,12 +187,12 @@ def main() -> None:
     checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(checkpoint["model"])
 
-    mean_dice, mean_iou, rows = evaluate(model, loader, device)
+    mean_dice, mean_iou, rows = evaluate(model, loader, device, threshold=args.threshold)
     metrics_path = args.out_dir / "metrics.csv"
     with metrics_path.open("w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["eval_split", "mean_dice", "mean_iou", "n_samples"])
-        writer.writerow([args.eval_split, mean_dice, mean_iou, len(eval_dataset)])
+        writer.writerow(["eval_split", "threshold", "mean_dice", "mean_iou", "n_samples"])
+        writer.writerow([args.eval_split, args.threshold, mean_dice, mean_iou, len(eval_dataset)])
 
     per_sample_path = args.out_dir / "per_sample_metrics.csv"
     with per_sample_path.open("w", newline="") as f:
@@ -224,7 +225,7 @@ def main() -> None:
     save_visual_grid(rows, visual_path, args.max_visuals)
 
     print(f"device={device}")
-    print(f"eval_split={args.eval_split} samples={len(eval_dataset)}")
+    print(f"eval_split={args.eval_split} threshold={args.threshold} samples={len(eval_dataset)}")
     print(f"mean_dice={mean_dice:.4f} mean_iou={mean_iou:.4f}")
     print(f"saved: {metrics_path}")
     print(f"saved: {per_sample_path}")

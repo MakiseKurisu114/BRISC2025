@@ -1,6 +1,6 @@
 # A3 Threshold Sweep
 
-本目录保存 A3 original 和 A3 small oversampling w=3 的阈值扫描结果。
+本目录保存 A3 original、A3 small oversampling w=3 和 A3 Boundary w=0.5 的阈值扫描结果。
 
 扫描阈值：
 
@@ -34,9 +34,32 @@
 | 0.45 | 0.7882 | 0.7018 | 0.7805 | 0.6880 |
 | 0.50 | 0.7881 | 0.7018 | 0.7811 | 0.6890 |
 
+## A3 Boundary w=0.5
+
+| threshold | overall Dice | overall IoU | small Dice | small IoU |
+|---:|---:|---:|---:|---:|
+| 0.30 | 0.8107 | 0.7298 | 0.7596 | 0.6641 |
+| 0.35 | 0.8111 | 0.7304 | 0.7613 | 0.6662 |
+| 0.40 | 0.8114 | 0.7310 | 0.7627 | 0.6680 |
+| 0.45 | 0.8115 | 0.7312 | 0.7636 | 0.6693 |
+| 0.50 | 0.8116 | 0.7314 | 0.7644 | 0.6704 |
+| 0.55 | 0.8117 | 0.7317 | 0.7655 | 0.6719 |
+| 0.60 | 0.8118 | 0.7320 | 0.7666 | 0.6735 |
+
 ## 结论
 
-降低阈值到 0.30-0.45 没有改善 small tumor。两个 checkpoint 都是在默认阈值 0.50 下 small tumor 指标最高。
+降低阈值到 0.30-0.45 没有改善 small tumor。A3 original 和 oversampling w=3 都是在默认阈值 0.50 下 small tumor 指标最高。
+
+对新的 A3 Boundary w=0.5，阈值从 0.50 提高到 0.60 后，overall IoU 和 small tumor 指标有轻微提升：
+
+```text
+overall Dice: 0.8116 -> 0.8118
+overall IoU : 0.7314 -> 0.7320
+small Dice  : 0.7644 -> 0.7666
+small IoU   : 0.6704 -> 0.6735
+```
+
+但提升幅度很小，不能改变主要结论：Boundary w=0.5 的模型本身是主要收益来源，threshold 调整只是小幅后处理优化。
 
 这说明当前 small tumor 难点不主要是后处理阈值过高导致的小目标被抹掉，更可能来自：
 
@@ -45,10 +68,4 @@
 - 训练采样和 loss 对小目标仍不够平衡；
 - small tumor 的形态和边界本身更难。
 
-下一步更建议继续试更温和的 oversampling 权重：
-
-```text
-small_sample_weight = 1.5 / 2.0
-```
-
-目标是在 small tumor 提升和 overall Dice 之间取得更好的折中。
+下一步更建议把 Boundary w=0.5 作为主模型，并在报告中说明不使用小连通域删除，以避免误删真实 small tumor。
