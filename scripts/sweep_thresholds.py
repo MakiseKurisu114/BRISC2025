@@ -35,10 +35,16 @@ VIEW_NAMES = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sweep probability thresholds for BRISC segmentation checkpoints")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Sweep probability thresholds for BRISC segmentation checkpoints. "
+            "Default split is validation; test should be used only after the final "
+            "configuration is fixed, not for threshold selection."
+        )
+    )
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--model", choices=["unet", "attention_unet"], required=True)
-    parser.add_argument("--eval-split", choices=["val", "test"], default="test")
+    parser.add_argument("--eval-split", choices=["val", "test"], default="val")
     parser.add_argument("--data-root", type=Path, default=Path("."))
     parser.add_argument("--image-size", type=int, default=128)
     parser.add_argument("--base-channels", type=int, default=16)

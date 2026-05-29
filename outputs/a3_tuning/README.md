@@ -4,6 +4,8 @@
 
 A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
+`legacy_test_exploration_not_for_selection.csv` 是历史测试记录，仅保留作结果追溯，不用于模型选择或调参。
+
 ## Final Selection
 
 主要结果文件：
@@ -72,7 +74,7 @@ outputs/a3/full/checkpoints/best_unet_boundary.pt
 ## Output Files
 
 ```text
-summary.csv
+legacy_test_exploration_not_for_selection.csv
 summary_val.csv
 threshold_sweep_val.csv
 summary_val_group_metrics.csv

@@ -167,9 +167,11 @@ eval_iou  = 0.9634
 
 ---
 
-## 3. 分组分析
+## 3. A5-val 分组分析
 
-项目已对测试集进行分组分析，包括：
+A5-val 使用 A1/A2/A3/A4 的 validation 结果进行模型比较和分组分析，用于确定后续 A3 tuning 的方向。test set 不参与 A5-val，也不参与调参或模型选择。
+
+分组维度包括：
 
 ```text
 1. 按肿瘤类型分组：glioma / meningioma / pituitary
@@ -177,71 +179,34 @@ eval_iou  = 0.9634
 3. 按肿瘤大小分组：small / medium / large
 ```
 
-A1 测试集分组结果示例：
+验证集整体指标：
 
-| 分组 | Dice | IoU |
-|---|---:|---:|
-| glioma | 0.6482 | 0.5446 |
-| meningioma | 0.8998 | 0.8374 |
-| pituitary | 0.8047 | 0.7113 |
-| small < 1% | 0.7589 | 0.6649 |
-| medium 1%-5% | 0.8142 | 0.7334 |
-| large > 5% | 0.8190 | 0.7492 |
+| 实验 | 模型 | 样本数 | val Dice | val IoU |
+|---|---|---:|---:|---:|
+| A1 | U-Net | 786 | 0.7938 | 0.7082 |
+| A2 | Attention U-Net | 786 | 0.7851 | 0.7011 |
+| A3 | U-Net + Boundary Loss | 786 | 0.8043 | 0.7228 |
+| A4 | Attention U-Net + Boundary Loss | 786 | 0.7934 | 0.7110 |
 
-主要观察：
-
-- 胶质瘤分割效果明显低于脑膜瘤和垂体瘤；
-- 小肿瘤组效果低于中、大肿瘤组；
-- 不同成像视角之间差距较小；
-- 这些结果支持后续继续做 Boundary Loss 和小目标分析。
-
-A3 测试集分组结果：
-
-| 分组 | 样本数 | Dice | IoU |
-|---|---:|---:|---:|
-| glioma | 254 | 0.6619 | 0.5619 |
-| meningioma | 306 | 0.9099 | 0.8552 |
-| pituitary | 300 | 0.8245 | 0.7340 |
-| axial | 346 | 0.8016 | 0.7252 |
-| coronal | 257 | 0.8041 | 0.7193 |
-| sagittal | 257 | 0.8168 | 0.7348 |
-| small < 1% | 346 | 0.7542 | 0.6638 |
-| medium 1%-5% | 454 | 0.8423 | 0.7667 |
-| large > 5% | 60 | 0.8423 | 0.7809 |
-
-A4 测试集分组结果：
-
-| 分组 | 样本数 | Dice | IoU |
-|---|---:|---:|---:|
-| glioma | 254 | 0.6362 | 0.5376 |
-| meningioma | 306 | 0.9088 | 0.8505 |
-| pituitary | 300 | 0.8036 | 0.7082 |
-| axial | 346 | 0.7959 | 0.7135 |
-| coronal | 257 | 0.7987 | 0.7148 |
-| sagittal | 257 | 0.7786 | 0.6953 |
-| small < 1% | 346 | 0.7497 | 0.6519 |
-| medium 1%-5% | 454 | 0.8218 | 0.7484 |
-| large > 5% | 60 | 0.8039 | 0.7321 |
-
-A5 综合分组结论：
+A5-val 各分组最优模型：
 
 | 分组 | 样本数 | Dice 最优 | 最优 Dice | IoU 最优 | 最优 IoU |
 |---|---:|---|---:|---|---:|
-| glioma | 254 | A3 | 0.6619 | A3 | 0.5619 |
-| meningioma | 306 | A3 | 0.9099 | A3 | 0.8552 |
-| pituitary | 300 | A2 | 0.8246 | A3 | 0.7340 |
-| axial | 346 | A3 | 0.8016 | A3 | 0.7252 |
-| coronal | 257 | A3 | 0.8041 | A3 | 0.7193 |
-| sagittal | 257 | A3 | 0.8168 | A3 | 0.7348 |
-| small < 1% | 346 | A1 | 0.7589 | A1 | 0.6649 |
-| medium 1%-5% | 454 | A3 | 0.8423 | A3 | 0.7667 |
-| large > 5% | 60 | A2 | 0.8516 | A3 | 0.7809 |
+| glioma | 231 | A3 | 0.6439 | A3 | 0.5398 |
+| meningioma | 259 | A3 | 0.9114 | A3 | 0.8588 |
+| pituitary | 296 | A3 | 0.8331 | A3 | 0.7436 |
+| axial | 251 | A3 | 0.7864 | A3 | 0.7064 |
+| coronal | 267 | A1 | 0.8120 | A1 | 0.7229 |
+| sagittal | 264 | A3 | 0.8246 | A3 | 0.7503 |
+| small < 1% | 294 | A1 | 0.7662 | A1 | 0.6716 |
+| medium 1%-5% | 458 | A3 | 0.8377 | A3 | 0.7604 |
+| large > 5% | 20 | A1 | 0.7919 | A1 | 0.7039 |
 
 主要观察：
 
-- A3 是整体测试集 Dice / IoU 最优模型；
-- A3 在 glioma、meningioma、全部视角和 medium tumor 上表现最好；
-- small tumor 组 A1 最高，说明 Boundary Loss 并没有在当前设置下稳定改善小目标；
+- A3 是验证集整体 Dice / IoU 最优模型；
+- A3 在 glioma、meningioma、pituitary、axial、sagittal 和 medium tumor 上表现最好；
+- small tumor 是验证集分组中较困难的类别，后续 A3 tuning 重点关注小目标；
 - A4 没有超过 A3，说明 Attention Gate 与 Boundary Loss 的简单叠加没有带来额外收益。
 
 ### A3 tuning validation-based selection
@@ -278,6 +243,8 @@ final test 结果：
 | A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
 
 final 流程统一使用 per-sample mean。
+
+Final test 阶段单独进行：模型结构、checkpoint、threshold 和超参数全部固定后，才在 test set 上做最终一次评估。test 结果只用于最终报告和误差分析，不反向指导调参。
 
 ---
 
@@ -454,7 +421,9 @@ GPU：NVIDIA GeForce RTX 3060 Laptop GPU
   --out-dir outputs/a4/overfit_8
 ```
 
-### 6.10 独立测试集评估
+### 6.10 Final test evaluation
+
+模型结构、checkpoint、threshold 和超参数全部固定后，才运行 final test evaluation。test set 只用于最终报告和误差分析，不参与模型选择或调参。
 
 A1：
 
@@ -549,7 +518,9 @@ A4：
   --out-dir outputs/a4/full/eval_test/group_visuals
 ```
 
-### 6.12 生成 A5 分组综合分析
+### 6.12 生成 A5-val 分组综合分析
+
+A5-val 读取 A1-A4 的 `eval_val/`，用于验证集模型比较、分组分析和后续调参方向判断。
 
 ```bash
 /home/wxy/python_project/.venv/bin/python scripts/summarize_a5_group_analysis.py \
@@ -612,9 +583,9 @@ A5：
 
 ```text
 outputs/a5/summary/
-├── overall_test_metrics.csv
-├── group_metrics_long.csv
-├── best_by_group.csv
+├── overall_val_metrics.csv
+├── group_val_metrics_long.csv
+├── best_by_group_val.csv
 ├── *_pivot.csv
 ├── figures/
 └── README.md
@@ -625,10 +596,13 @@ outputs/a5/summary/
 - `history.csv`：每个 epoch 的 loss / Dice / IoU；
 - `training_curves.png`：训练过程曲线；
 - `checkpoints/*.pt`：模型权重；
-- `eval_test/metrics.csv`：测试集整体指标；
-- `eval_test/per_sample_metrics.csv`：每张图单独指标；
-- `eval_test/group_metrics.csv`：按类型、视角、大小分组指标；
-- `eval_test/group_visuals/`：分组可视化图片；
+- `eval_val/metrics.csv`：验证集整体指标，用于模型选择和调参依据；
+- `eval_val/per_sample_metrics.csv`：验证集每张图单独指标；
+- `eval_val/group_metrics.csv`：验证集按类型、视角、大小分组指标；
+- `eval_test/metrics.csv`：最终测试集整体指标，只用于最终报告和误差分析；
+- `eval_test/per_sample_metrics.csv`：最终测试集每张图单独指标；
+- `eval_test/group_metrics.csv`：最终测试集按类型、视角、大小分组指标；
+- `eval_test/group_visuals/`：最终测试集分组可视化图片；
 - `readable_checkpoint/`：可读模型结构和参数统计。
 
 ---
@@ -663,12 +637,12 @@ README.md
 后续可选工作：
 
 ```text
-调参：A3 boundary_weight / A4 learning rate 与 epochs
+调参：A3 validation-based tuning / A4 learning rate 与 epochs
 ```
 
 重点观察：
 
-- A3 的 boundary_weight 是否还能进一步提升；
+- A3 的 boundary_weight 是否还能在 validation set 上进一步提升；
 - A4 是否需要更低学习率或更多 epoch；
-- small tumor 组为什么 A1 最高；
+- validation small tumor 组为什么仍然困难；
 - glioma 是否需要单独增强或类别针对性分析。

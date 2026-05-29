@@ -1,0 +1,10 @@
+group_type,group,group_label,n,best_dice_experiment,best_dice_model,best_dice,best_iou_experiment,best_iou_model,best_iou
+tumor,glioma,glioma,231,A3,U-Net + Boundary Loss,0.6439491880067666,A3,U-Net + Boundary Loss,0.539773053668011
+tumor,meningioma,meningioma,259,A3,U-Net + Boundary Loss,0.911364014248504,A3,U-Net + Boundary Loss,0.8587756726562576
+tumor,pituitary,pituitary,296,A3,U-Net + Boundary Loss,0.8331233603263214,A3,U-Net + Boundary Loss,0.7435559002821097
+view,axial,axial,251,A3,U-Net + Boundary Loss,0.7864030960642204,A3,U-Net + Boundary Loss,0.706366421968643
+view,coronal,coronal,267,A1,U-Net,0.8119973620908443,A1,U-Net,0.7228959667617814
+view,sagittal,sagittal,264,A3,U-Net + Boundary Loss,0.8246389965558928,A3,U-Net + Boundary Loss,0.7503387157131886
+size_group,large_>5%,large > 5%,20,A1,U-Net,0.79185149371624,A1,U-Net,0.7039456740021706
+size_group,medium_1-5%,medium 1%-5%,458,A3,U-Net + Boundary Loss,0.8377460761948069,A3,U-Net + Boundary Loss,0.7604064596760627
+size_group,small_<1%,small < 1%,294,A1,U-Net,0.7661525210620034,A1,U-Net,0.6716441611690633
