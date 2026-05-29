@@ -2,6 +2,41 @@
 
 本目录保存 A3 的输入分辨率、small tumor oversampling、threshold sweep 和 loss 调参结果，不覆盖原始 `outputs/a3/full/`。
 
+重要说明：
+
+```text
+本目录结果属于 exploratory analysis。
+这些实验曾使用 test set 做横向比较，因此不能作为严格 final model/config 选择依据。
+严格 final 选择结果已在本目录下重新生成：
+1. val set 选择模型设置和 threshold；
+2. test set 只用于最终固定配置的一次评估。
+```
+
+严格 final 文件：
+
+```text
+summary_val.csv
+threshold_sweep_val.csv
+final_selection.json
+final_test.csv
+final_test_group_metrics.csv
+final_test_per_sample_metrics.csv
+```
+
+严格 final 选择结果：
+
+| selected candidate | threshold | val Dice | val IoU | val Precision | val Recall |
+|---|---:|---:|---:|---:|---:|
+| A3_boundary_w03 | 0.30 | 0.8052 | 0.7241 | 0.8335 | 0.8205 |
+
+固定该配置后的 final test 结果：
+
+| candidate | threshold | test Dice | test IoU | test Precision | test Recall |
+|---|---:|---:|---:|---:|---:|
+| A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
+
+所有 final 指标均为 per-sample mean。
+
 调参假设：
 
 ```text

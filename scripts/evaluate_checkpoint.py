@@ -78,17 +78,10 @@ def size_group(mask: torch.Tensor) -> tuple[float, str]:
 def evaluate(model, loader, device, threshold: float):
     model.eval()
     rows = []
-    total_dice = 0.0
-    total_iou = 0.0
-    n_batches = 0
     for batch in loader:
         images = batch["image"].to(device)
         masks = batch["mask"].to(device)
         logits = model(images)
-        dice, iou = dice_iou_from_logits(logits, masks, threshold=threshold)
-        total_dice += dice
-        total_iou += iou
-        n_batches += 1
 
         probs = torch.sigmoid(logits)
         preds = (probs > threshold).float()
@@ -111,7 +104,9 @@ def evaluate(model, loader, device, threshold: float):
                     "pred": preds[i].detach().cpu(),
                 }
             )
-    return total_dice / n_batches, total_iou / n_batches, rows
+    mean_dice = sum(row["dice"] for row in rows) / len(rows)
+    mean_iou = sum(row["iou"] for row in rows) / len(rows)
+    return mean_dice, mean_iou, rows
 
 
 def grouped_metrics(rows, key: str) -> list[dict[str, float | int | str]]:

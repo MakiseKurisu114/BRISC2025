@@ -1,0 +1,27 @@
+{
+  "selection_split": "val",
+  "selection_metric": "per-sample mean val Dice",
+  "tie_breakers": [
+    "val_iou",
+    "val_precision",
+    "val_recall"
+  ],
+  "selected": {
+    "candidate": "A3_boundary_w03",
+    "checkpoint": "outputs/a3_tuning/boundary_w03/full/checkpoints/best_unet_boundary.pt",
+    "image_size": 128,
+    "boundary_weight": 0.3,
+    "oversampling_weight": "",
+    "loss_variant": "bce_dice_boundary",
+    "threshold": 0.3,
+    "n_samples": 786,
+    "val_dice": 0.8051749033454356,
+    "val_iou": 0.7240539047998242,
+    "val_precision": 0.8335188842169245,
+    "val_recall": 0.8204714740743141,
+    "small_val_dice": 0.7685455122497247,
+    "small_val_iou": 0.6827034900187421,
+    "small_val_precision": 0.7670514414186688,
+    "small_val_recall": 0.8244061358286907
+  }
+}

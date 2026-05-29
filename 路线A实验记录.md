@@ -1673,7 +1673,7 @@ seed = 42
 
 ### 3. 结论
 
-`boundary_weight=0.5` 是当前新的 overall 最优设置：
+在早期 test-based exploratory analysis 中，`boundary_weight=0.5` 的 test overall 指标最高：
 
 ```text
 test Dice: 0.8075 -> 0.8120
@@ -1692,9 +1692,9 @@ small IoU : 0.6638 -> 0.6704
 当前结论：
 
 ```text
-overall 最优：A3 Boundary w=0.5
-small tumor 单项最优：A3 small oversampling w=3
-综合推荐：A3 Boundary w=0.5
+exploratory overall 最优：A3 Boundary w=0.5
+exploratory small tumor 单项最优：A3 small oversampling w=3
+注意：这些结论来自 test-based exploratory analysis，不能作为严格 final 选参依据。
 ```
 
 输出目录：
@@ -1714,7 +1714,7 @@ outputs/a3_tuning/boundary_w05/full/
 
 ### 1. 调参目的
 
-`boundary_weight=0.5` 已成为新的整体最优模型，因此对该 checkpoint 重新扫描二值化阈值，观察是否能进一步改善 overall 或 small tumor。
+在早期 exploratory analysis 中，`boundary_weight=0.5` 的 test 指标最高，因此当时对该 checkpoint 重新扫描二值化阈值，观察是否能进一步改善 overall 或 small tumor。该结果保留为探索性分析，不作为严格 final 阈值选择依据。
 
 扫描阈值：
 
@@ -1769,4 +1769,91 @@ test IoU  = 0.7324
 
 ```text
 outputs/a3_tuning/threshold_sweep/a3_boundary_w05/
+```
+
+---
+
+## A3 tuning：validation-based model selection
+
+状态：已完成。
+
+### 1. 修正目的
+
+早期 A3 tuning 使用 test set 做过多组横向比较，包括 boundary weight、oversampling、Focal Tversky 和 threshold。这些结果现在保留为 exploratory analysis，但不再作为严格 final model/config 的选择依据。
+
+修正后的严格流程：
+
+```text
+train split: 训练 checkpoint
+val split  : 选择模型设置和 threshold
+test split : 只对最终固定配置做一次泛化评估
+```
+
+指标统一为 per-sample mean，避免旧脚本中 batch mean 和 per-sample mean 混用。
+
+### 2. 新脚本
+
+```text
+scripts/a3_tuning_val_selection.py
+```
+
+该脚本复用已有 checkpoints，不重新训练。
+
+### 3. Validation selection
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/a3_tuning_val_selection.py val-eval --data-root . --out-dir outputs/a3_tuning --thresholds 0.30 0.35 0.40 0.45 0.50 0.55 0.60 --batch-size 8 --base-channels 16
+```
+
+选择策略：
+
+```text
+在 validation set 上选择 per-sample mean Dice 最高的候选；
+若并列，再依次比较 validation IoU、Precision、Recall。
+```
+
+Validation 选出的最终配置：
+
+| selected candidate | threshold | val Dice | val IoU | val Precision | val Recall |
+|---|---:|---:|---:|---:|---:|
+| A3_boundary_w03 | 0.30 | 0.8052 | 0.7241 | 0.8335 | 0.8205 |
+
+输出文件：
+
+```text
+outputs/a3_tuning/summary_val.csv
+outputs/a3_tuning/threshold_sweep_val.csv
+outputs/a3_tuning/summary_val_group_metrics.csv
+outputs/a3_tuning/final_selection.json
+```
+
+### 4. Final test evaluation
+
+运行命令：
+
+```bash
+/home/wxy/python_project/.venv/bin/python scripts/a3_tuning_val_selection.py final-test --data-root . --out-dir outputs/a3_tuning --selection-json outputs/a3_tuning/final_selection.json --batch-size 8 --base-channels 16 --max-visuals 8
+```
+
+Final test 结果：
+
+| candidate | threshold | test Dice | test IoU | test Precision | test Recall |
+|---|---:|---:|---:|---:|---:|
+| A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
+
+Final test small tumor：
+
+| group | Dice | IoU | Precision | Recall |
+|---|---:|---:|---:|---:|
+| small_<1% | 0.7464 | 0.6524 | 0.7316 | 0.8465 |
+
+输出文件：
+
+```text
+outputs/a3_tuning/final_test.csv
+outputs/a3_tuning/final_test_group_metrics.csv
+outputs/a3_tuning/final_test_per_sample_metrics.csv
+outputs/a3_tuning/final_test_examples_worst_best.png
 ```
