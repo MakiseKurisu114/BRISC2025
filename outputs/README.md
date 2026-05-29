@@ -231,20 +231,20 @@ test_dice = 0.7923
 test_iou  = 0.7093
 ```
 
-## A5-val：A1-A4 验证集分组综合分析
+## A5：A1-A4 分组综合分析
 
 ```text
 outputs/a5/summary/
 ```
 
-A5-val 不重新训练模型，汇总 A1-A4 已有验证集整体指标和分组指标，用于模型比较、分组分析和后续调参方向判断。test set 只用于最终固定配置后的泛化评估。
+A5 不重新训练模型，汇总 A1-A4 已有测试集整体指标和分组指标。A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation set 保存 best checkpoint；A5 使用固定 checkpoint 的 test 结果做综合比较。
 
 主要文件：
 
 ```text
-overall_val_metrics.csv                  A1-A4 验证集整体 Dice / IoU
-group_val_metrics_long.csv               A1-A4 验证集所有分组长表
-best_by_group_val.csv                    验证集每个分组 Dice / IoU 最优模型
+overall_test_metrics.csv                 A1-A4 独立测试集整体 Dice / IoU
+group_metrics_long.csv                   A1-A4 所有分组长表
+best_by_group.csv                        每个分组 Dice / IoU 最优模型
 tumor_mean_dice_pivot.csv                肿瘤类型 Dice 对比透视表
 tumor_mean_iou_pivot.csv                 肿瘤类型 IoU 对比透视表
 view_mean_dice_pivot.csv                 成像视角 Dice 对比透视表
@@ -254,10 +254,10 @@ size_group_mean_iou_pivot.csv            肿瘤大小 IoU 对比透视表
 README.md                                A5 自动生成摘要
 ```
 
-`figures/` 保存 A5-val 对比图：
+`figures/` 保存 A5 对比图：
 
 ```text
-overall_val_metrics.png
+overall_test_metrics.png
 tumor_dice_comparison.png
 tumor_iou_comparison.png
 view_dice_comparison.png
@@ -266,20 +266,21 @@ size_group_dice_comparison.png
 size_group_iou_comparison.png
 ```
 
-A5-val 核心结论：
+A5 核心结论：
 
 ```text
-验证集整体最优：A3 U-Net + Boundary Loss
-val_dice = 0.8043
-val_iou  = 0.7228
+整体测试集最优：A3 U-Net + Boundary Loss
+test_dice = 0.8075
+test_iou  = 0.7271
 ```
 
 分组层面：
 
 ```text
-glioma / meningioma / pituitary / axial / sagittal / medium tumor：A3 最优
+glioma / meningioma / axial / coronal / sagittal / medium tumor：A3 最优
 small tumor：A1 最优
-coronal / large tumor：A1 最优
+large tumor Dice：A2 最优
+large tumor IoU：A3 最优
 ```
 
 ## A3 Tuning：validation-based selection
