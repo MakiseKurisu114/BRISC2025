@@ -8,7 +8,7 @@
 outputs/a3_tuning/threshold_sweep_val.csv
 ```
 
-当前最终选择：
+当前 validation-based tuning 候选配置：
 
 ```text
 candidate = A3_boundary_w03
@@ -17,8 +17,12 @@ selection split = validation set
 selection metric = per-sample mean val Dice
 ```
 
+这里的 `A3_boundary_w03` 是 validation-based tuning 选出的候选配置，不是最终报告主模型；最终主结果仍采用原始 A3。
+
 固定上述配置后，test set 只用于最终泛化评估：
 
 ```text
 outputs/a3_tuning/final_test.csv
 ```
+
+该候选配置的 final test 未超过原始 A3，因此最终报告主结果仍采用原始 A3：test Dice = 0.8075，test IoU = 0.7271。

@@ -19,13 +19,13 @@ env/
 .vscode/
 .agents/
 .codex/
-docs/
 
 # Kaggle / secrets
 kaggle.json
 *.key
 
 # Local dataset files
+docs/
 classification_task/
 segmentation_task/
 manifest.csv

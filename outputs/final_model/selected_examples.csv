@@ -1,0 +1,34 @@
+figure,group_type,group_label,selection,name,tumor,view,size_label,dice,iou,precision,recall
+overall_examples.png,overall,overall,worst,brisc2025_test_00001_gl_ax_t1,glioma,axial,small < 1%,1.0266940769776411e-10,1.0266940769776411e-10,1.1086474793753354e-10,1.3888888927837684e-09
+overall_examples.png,overall,overall,worst,brisc2025_test_00177_gl_sa_t1,glioma,sagittal,medium 1%-5%,1.097694851681652e-10,1.097694851681652e-10,2.1413276707349382e-10,2.252252273571287e-10
+overall_examples.png,overall,overall,typical,brisc2025_test_00203_gl_sa_t1,glioma,sagittal,medium 1%-5%,0.908857524394989,0.8329411745071411,0.9725274443626404,0.8530120253562927
+overall_examples.png,overall,overall,typical,brisc2025_test_00435_me_co_t1,meningioma,coronal,small < 1%,0.9090909361839294,0.8333333134651184,0.9126983880996704,0.9055117964744568
+overall_examples.png,overall,overall,best,brisc2025_test_00468_me_co_t1,meningioma,coronal,medium 1%-5%,0.9890664219856262,0.9783693552017212,0.9949238300323486,0.9832776188850403
+overall_examples.png,overall,overall,best,brisc2025_test_00757_pi_ax_t1,pituitary,axial,medium 1%-5%,0.9894737005233765,0.9791666865348816,0.9915611743927002,0.9873949289321899
+tumor_glioma_examples.png,tumor,glioma,worst,brisc2025_test_00001_gl_ax_t1,glioma,axial,small < 1%,1.0266940769776411e-10,1.0266940769776411e-10,1.1086474793753354e-10,1.3888888927837684e-09
+tumor_glioma_examples.png,tumor,glioma,typical,brisc2025_test_00175_gl_sa_t1,glioma,sagittal,medium 1%-5%,0.750617265701294,0.6007905006408691,0.6495726704597473,0.8888888955116272
+tumor_glioma_examples.png,tumor,glioma,best,brisc2025_test_00078_gl_ax_t1,glioma,axial,medium 1%-5%,0.9793388247489929,0.9595141410827637,0.9753086566925049,0.9834024906158447
+tumor_meningioma_examples.png,tumor,meningioma,worst,brisc2025_test_00281_me_ax_t1,meningioma,axial,medium 1%-5%,1.2180267905392839e-10,1.2180267905392839e-10,2.380952379699153e-10,2.493765749456145e-10
+tumor_meningioma_examples.png,tumor,meningioma,typical,brisc2025_test_00278_me_ax_t1,meningioma,axial,medium 1%-5%,0.9524632692337036,0.9092409014701843,0.9532871842384338,0.951640784740448
+tumor_meningioma_examples.png,tumor,meningioma,best,brisc2025_test_00468_me_co_t1,meningioma,coronal,medium 1%-5%,0.9890664219856262,0.9783693552017212,0.9949238300323486,0.9832776188850403
+tumor_pituitary_examples.png,tumor,pituitary,worst,brisc2025_test_00813_pi_ax_t1,pituitary,axial,small < 1%,3.4364261436437005e-10,3.4364261436437005e-10,5.376344369700803e-10,9.52380951879661e-10
+tumor_pituitary_examples.png,tumor,pituitary,typical,brisc2025_test_00827_pi_co_t1,pituitary,coronal,small < 1%,0.8888888955116272,0.800000011920929,0.9382715821266174,0.8444444537162781
+tumor_pituitary_examples.png,tumor,pituitary,best,brisc2025_test_00757_pi_ax_t1,pituitary,axial,medium 1%-5%,0.9894737005233765,0.9791666865348816,0.9915611743927002,0.9873949289321899
+view_axial_examples.png,view,axial,worst,brisc2025_test_00001_gl_ax_t1,glioma,axial,small < 1%,1.0266940769776411e-10,1.0266940769776411e-10,1.1086474793753354e-10,1.3888888927837684e-09
+view_axial_examples.png,view,axial,typical,brisc2025_test_00066_gl_ax_t1,glioma,axial,medium 1%-5%,0.9153374433517456,0.8438913822174072,0.9515306353569031,0.8817967176437378
+view_axial_examples.png,view,axial,best,brisc2025_test_00757_pi_ax_t1,pituitary,axial,medium 1%-5%,0.9894737005233765,0.9791666865348816,0.9915611743927002,0.9873949289321899
+view_coronal_examples.png,view,coronal,worst,brisc2025_test_00418_me_co_t1,meningioma,coronal,medium 1%-5%,1.6286645643237563e-10,1.6286645643237563e-10,4.385964924580321e-10,2.590673509050845e-10
+view_coronal_examples.png,view,coronal,typical,brisc2025_test_00460_me_co_t1,meningioma,coronal,small < 1%,0.9012345671653748,0.8202247023582458,0.9358974099159241,0.8690476417541504
+view_coronal_examples.png,view,coronal,best,brisc2025_test_00468_me_co_t1,meningioma,coronal,medium 1%-5%,0.9890664219856262,0.9783693552017212,0.9949238300323486,0.9832776188850403
+view_sagittal_examples.png,view,sagittal,worst,brisc2025_test_00177_gl_sa_t1,glioma,sagittal,medium 1%-5%,1.097694851681652e-10,1.097694851681652e-10,2.1413276707349382e-10,2.252252273571287e-10
+view_sagittal_examples.png,view,sagittal,typical,brisc2025_test_00244_gl_sa_t1,glioma,sagittal,medium 1%-5%,0.9132149815559387,0.840290367603302,0.9410569071769714,0.8869732022285461
+view_sagittal_examples.png,view,sagittal,best,brisc2025_test_00554_me_sa_t1,meningioma,sagittal,medium 1%-5%,0.9869918823242188,0.9743177890777588,0.9885993599891663,0.9853895902633667
+size_small_examples.png,size,small < 1%,worst,brisc2025_test_00001_gl_ax_t1,glioma,axial,small < 1%,1.0266940769776411e-10,1.0266940769776411e-10,1.1086474793753354e-10,1.3888888927837684e-09
+size_small_examples.png,size,small < 1%,typical,brisc2025_test_00787_pi_ax_t1,pituitary,axial,small < 1%,0.8682634830474854,0.7671957612037659,0.7795698642730713,0.9797297120094299
+size_small_examples.png,size,small < 1%,best,brisc2025_test_00433_me_co_t1,meningioma,coronal,small < 1%,0.9826589822769165,0.9659090638160706,0.9883720874786377,0.977011501789093
+size_medium_examples.png,size,medium 1%-5%,worst,brisc2025_test_00177_gl_sa_t1,glioma,sagittal,medium 1%-5%,1.097694851681652e-10,1.097694851681652e-10,2.1413276707349382e-10,2.252252273571287e-10
+size_medium_examples.png,size,medium 1%-5%,typical,brisc2025_test_00524_me_sa_t1,meningioma,sagittal,medium 1%-5%,0.9306759238243103,0.8703403472900391,0.8760195970535278,0.9926062822341919
+size_medium_examples.png,size,medium 1%-5%,best,brisc2025_test_00757_pi_ax_t1,pituitary,axial,medium 1%-5%,0.9894737005233765,0.9791666865348816,0.9915611743927002,0.9873949289321899
+size_large_examples.png,size,large > 5%,worst,brisc2025_test_00493_me_sa_t1,meningioma,sagittal,large > 5%,0.07080266624689102,0.03670058026909828,0.06328320503234863,0.08035004138946533
+size_large_examples.png,size,large > 5%,typical,brisc2025_test_00264_me_ax_t1,meningioma,axial,large > 5%,0.9597238302230835,0.9225663542747498,0.9928571581840515,0.9287304878234863
+size_large_examples.png,size,large > 5%,best,brisc2025_test_00304_me_ax_t1,meningioma,axial,large > 5%,0.9884734153747559,0.9772095680236816,0.993220329284668,0.9837716817855835

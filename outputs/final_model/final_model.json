@@ -1,0 +1,148 @@
+{
+  "created_from_existing_results": true,
+  "source_files": {
+    "main_experiment_overall_metrics": "outputs/a5/summary/overall_test_metrics.csv",
+    "main_experiment_group_best": "outputs/a5/summary/best_by_group.csv",
+    "a3_tuning_final_test": "outputs/a3_tuning/final_test.csv",
+    "a3_tuning_final_selection": "outputs/a3_tuning/final_selection.json"
+  },
+  "selection_rules": [
+    "Select the best A1-A4 main experiment by independent test Dice.",
+    "If test Dice is tied or very close, compare test IoU.",
+    "Compare the A3 tuning final candidate with the best main experiment.",
+    "Use the A3 tuning candidate as final model only if its final test Dice and IoU exceed the best main experiment.",
+    "Do not select the final model from validation metrics alone."
+  ],
+  "candidate_models": [
+    {
+      "name": "A1",
+      "role": "main_experiment",
+      "method": "U-Net",
+      "checkpoint": "outputs/a1/full/checkpoints/best_unet.pt",
+      "threshold": 0.5,
+      "n_samples": 860,
+      "test_dice": 0.7930014903346697,
+      "test_iou": 0.7078172247166987,
+      "source": "outputs/a5/summary/overall_test_metrics.csv"
+    },
+    {
+      "name": "A2",
+      "role": "main_experiment",
+      "method": "Attention U-Net",
+      "checkpoint": "outputs/a2/full/checkpoints/best_attention_unet.pt",
+      "threshold": 0.5,
+      "n_samples": 860,
+      "test_dice": 0.7937368579484798,
+      "test_iou": 0.7086824391175199,
+      "source": "outputs/a5/summary/overall_test_metrics.csv"
+    },
+    {
+      "name": "A3",
+      "role": "main_experiment",
+      "method": "U-Net + Boundary Loss",
+      "checkpoint": "outputs/a3/full/checkpoints/best_unet_boundary.pt",
+      "threshold": 0.5,
+      "n_samples": 860,
+      "test_dice": 0.8074886150382183,
+      "test_iou": 0.7270792071466092,
+      "source": "outputs/a5/summary/overall_test_metrics.csv"
+    },
+    {
+      "name": "A4",
+      "role": "main_experiment",
+      "method": "Attention U-Net + Boundary Loss",
+      "checkpoint": "outputs/a4/full/checkpoints/best_attention_unet_boundary.pt",
+      "threshold": 0.5,
+      "n_samples": 860,
+      "test_dice": 0.7922619644690443,
+      "test_iou": 0.7092524137761858,
+      "source": "outputs/a5/summary/overall_test_metrics.csv"
+    },
+    {
+      "name": "A3_boundary_w03",
+      "role": "supplemental_tuning_final_candidate",
+      "method": "U-Net + Boundary Loss, boundary_weight=0.3",
+      "checkpoint": "outputs/a3_tuning/boundary_w03/full/checkpoints/best_unet_boundary.pt",
+      "threshold": 0.3,
+      "n_samples": 860,
+      "test_dice": 0.7985943641240546,
+      "test_iou": 0.7164477223788009,
+      "test_precision": 0.8235133278822143,
+      "test_recall": 0.8311075212628473,
+      "small_test_dice": 0.7463686640006549,
+      "small_test_iou": 0.6524457580591235,
+      "selection_split": "val",
+      "selection_metric": "per-sample mean val Dice",
+      "val_dice": 0.8051749033454356,
+      "val_iou": 0.7240539047998242,
+      "source": "outputs/a3_tuning/final_selection.json and outputs/a3_tuning/final_test.csv"
+    }
+  ],
+  "best_main_experiment": {
+    "name": "A3",
+    "method": "U-Net + Boundary Loss",
+    "checkpoint": "outputs/a3/full/checkpoints/best_unet_boundary.pt",
+    "threshold": 0.5,
+    "test_dice": 0.8074886150382183,
+    "test_iou": 0.7270792071466092
+  },
+  "a3_tuning_comparison": {
+    "candidate": "A3_boundary_w03",
+    "selection_type": "validation-based supplemental tuning",
+    "threshold": 0.3,
+    "test_dice": 0.7985943641240546,
+    "test_iou": 0.7164477223788009,
+    "outperforms_best_main_experiment": false,
+    "decision": "does_not_replace_final_model"
+  },
+  "final_model": {
+    "name": "A3",
+    "method": "U-Net + Boundary Loss",
+    "checkpoint": "outputs/a3/full/checkpoints/best_unet_boundary.pt",
+    "threshold": 0.5,
+    "n_samples": 860,
+    "test_dice": 0.8074886150382183,
+    "test_iou": 0.7270792071466092,
+    "checkpoint_copied": false,
+    "checkpoint_note": ".pt file is not copied; this summary references the original checkpoint path."
+  },
+  "final_inference": {
+    "completed": true,
+    "script": "scripts/run_final_inference.py",
+    "split": "segmentation_task/test",
+    "threshold": 0.5,
+    "n_samples": 860,
+    "per_sample_mean_dice": 0.8068542142425685,
+    "per_sample_mean_iou": 0.7262892526303656,
+    "per_sample_mean_precision": 0.8220662970604665,
+    "per_sample_mean_recall": 0.8441983050069204,
+    "output_files": [
+      "outputs/final_model/per_sample_metrics.csv",
+      "outputs/final_model/group_metrics.csv",
+      "outputs/final_model/final_test_summary.csv",
+      "outputs/final_model/selected_examples.csv",
+      "outputs/final_model/figures/overall_examples.png",
+      "outputs/final_model/figures/tumor_glioma_examples.png",
+      "outputs/final_model/figures/tumor_meningioma_examples.png",
+      "outputs/final_model/figures/tumor_pituitary_examples.png",
+      "outputs/final_model/figures/view_axial_examples.png",
+      "outputs/final_model/figures/view_coronal_examples.png",
+      "outputs/final_model/figures/view_sagittal_examples.png",
+      "outputs/final_model/figures/size_small_examples.png",
+      "outputs/final_model/figures/size_medium_examples.png",
+      "outputs/final_model/figures/size_large_examples.png"
+    ],
+    "note": "Final model selection still follows the existing A5 summary metrics. This section records the new final inference run and its per-sample metrics."
+  },
+  "group_summary": {
+    "small_tumor_best_by_dice": {
+      "experiment": "A1",
+      "method": "U-Net",
+      "dice": 0.7589491110517941,
+      "iou_best_experiment": "A1",
+      "iou": 0.6649460774940058
+    },
+    "note": "Small tumor remains difficult, and the group-wise best model is not necessarily the overall final model."
+  },
+  "conclusion": "Final model is original A3 because it is the best A1-A4 independent test set model and the A3 tuning final candidate does not outperform it on final test."
+}

@@ -169,7 +169,7 @@ eval_iou  = 0.9634
 
 ## 3. A5 分组分析
 
-A1-A4 训练阶段只使用 `segmentation_task/train`，并从 train 内部划分 validation set 用于保存 best checkpoint。A5 不重新训练模型，而是使用 A1/A2/A3/A4 固定 checkpoint 的 test 结果进行综合比较，并选择后续调参的基础模型。
+A1-A4 训练阶段只使用 `segmentation_task/train`，并从 train 内部划分 validation set 用于保存 best checkpoint。`segmentation_task/test` 不参与训练，也不参与 checkpoint 保存；A5 不重新训练模型，而是使用 A1/A2/A3/A4 固定 checkpoint 的 `eval_test` 结果进行综合比较，并选择原始 A3 作为后续调参的基础模型。
 
 分组维度包括：
 
@@ -212,7 +212,7 @@ A5 各分组最优模型：
 
 ### A3 tuning validation-based selection
 
-A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
+A3 tuning 是基于 A5 选择出的原始 A3 进行的补充优化探索。该阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择候选配置。固定该候选配置后，仅在 test set 上进行一次 final test evaluation；该 final test 只用于检验 tuning 候选配置的泛化表现，不用于再次选择模型。
 
 判断规则：
 
@@ -223,7 +223,7 @@ A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 bou
 | small oversampling 权重 | val Dice / val IoU / small tumor val 指标 |
 | Focal Tversky 等 loss variant | val Dice / val IoU |
 | threshold | val Dice / val IoU |
-| final fixed config | test Dice / test IoU |
+| fixed tuning candidate 泛化表现 | test Dice / test IoU |
 
 规范选择结果保存在：
 
@@ -234,27 +234,55 @@ outputs/a3_tuning/final_selection.json
 outputs/a3_tuning/final_test.csv
 ```
 
-选择规则：
+候选配置选择规则：
 
 ```text
 validation set 上比较 A3 tuning 候选 checkpoint/config 和 threshold；
-选择 validation per-sample mean Dice 最高的配置；
-固定该配置后，只对 test set 做一次 final evaluation。
+选择 validation per-sample mean Dice 最高的候选配置；
+固定该候选配置后，只对 test set 做一次 final evaluation。
 ```
 
-validation set 选出的最终配置：
+validation set 选出的 tuning 候选配置：
 
 | selected candidate | threshold | val Dice | val IoU | val Precision | val Recall |
 |---|---:|---:|---:|---:|---:|
 | A3_boundary_w03 | 0.30 | 0.8052 | 0.7241 | 0.8335 | 0.8205 |
 
-final test 结果：
+tuning candidate final test 结果：
 
 | candidate | threshold | test Dice | test IoU | test Precision | test Recall |
 |---|---:|---:|---:|---:|---:|
 | A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
 
 final 流程统一使用 per-sample mean。
+
+最终主结论：
+
+> 综合 A1-A4 独立测试集整体指标，A3（U-Net + Boundary Loss）取得最高 Dice / IoU，因此被选为路线 A 的最终主模型和后续 tuning 基础。A3 tuning 进一步探索了 boundary weight、输入分辨率、小目标过采样、loss variant 和 threshold 等配置，并在 validation set 上选择 A3_boundary_w03 + threshold 0.30 作为候选配置；但其固定配置后的 final test 未超过原始 A3。因此，最终报告以原始 A3 的 test Dice = 0.8075、test IoU = 0.7271 作为主结果，A3 tuning 作为补充分析和后续优化探索。
+
+### Final Model
+
+最终模型汇总保存在：
+
+```text
+outputs/final_model/
+```
+
+`outputs/final_model/final_model.json` 根据已有结果文件自动选择 final model：先从 `outputs/a5/summary/overall_test_metrics.csv` 选择 A1-A4 中 independent test Dice 最高的主实验模型，再与 `outputs/a3_tuning/final_test.csv` 中的 tuning final candidate 对比。当前 final model 为原始 A3（U-Net + Boundary Loss），checkpoint 引用 `outputs/a3/full/checkpoints/best_unet_boundary.pt`，threshold = 0.50，test Dice = 0.8075，test IoU = 0.7271。`.pt` 文件不复制到 `outputs/final_model/`，只引用原 checkpoint 路径。
+
+### Final qualitative results
+
+已基于 final model 在 `segmentation_task/test` 上运行 final inference，并将最终展示结果统一保存到 `outputs/final_model/`：
+
+```text
+outputs/final_model/final_test_summary.csv
+outputs/final_model/per_sample_metrics.csv
+outputs/final_model/group_metrics.csv
+outputs/final_model/selected_examples.csv
+outputs/final_model/figures/
+```
+
+`figures/` 中包含 overall、tumor、view、size 四类可视化结果。每张图展示 MRI、ground truth mask、predicted mask 和 contour overlay，并标注样本 Dice / IoU。final inference 的 per-sample mean Dice = 0.8069，IoU = 0.7263；small tumor 组 Dice = 0.7542，仍是主要困难点之一。
 
 ---
 
@@ -274,6 +302,7 @@ final 流程统一使用 per-sample mean。
 │   ├── overfit_a3_unet_boundary.py
 │   ├── overfit_a4_attention_unet_boundary.py
 │   ├── plot_history.py
+│   ├── run_final_inference.py
 │   ├── summarize_a5_group_analysis.py
 │   ├── train_a1_unet.py
 │   ├── train_a2_attention_unet.py
@@ -292,6 +321,7 @@ final 流程统一使用 per-sample mean。
 │   ├── a3/
 │   ├── a4/
 │   ├── a5/
+│   ├── final_model/
 │   └── README.md
 ├── 医学图像实验路线.md
 └── 路线A实验记录.md
@@ -433,7 +463,7 @@ GPU：NVIDIA GeForce RTX 3060 Laptop GPU
 
 ### 6.10 独立测试集评估
 
-A1-A4 的 checkpoint 均由 train 内部划分出的 validation set 选择；以下命令使用固定 checkpoint 在 `segmentation_task/test` 上评估，用于 A5 综合比较。
+A1-A4 的 checkpoint 均由 train 内部划分出的 validation set 选择；`segmentation_task/test` 不参与训练和 checkpoint 保存。以下命令使用固定 checkpoint 在 `segmentation_task/test` 上评估，生成 `eval_test`，用于 A5 综合比较。
 
 A1：
 
@@ -530,7 +560,7 @@ A4：
 
 ### 6.12 生成 A5 分组综合分析
 
-A5 读取 A1-A4 的 `eval_test/`，用于测试集模型比较、分组分析，并选择后续调参的基础模型。
+A5 读取 A1-A4 的 `eval_test/`，用于测试集模型比较、分组分析，并选择原始 A3 作为后续调参的基础模型。
 
 ```bash
 /home/wxy/python_project/.venv/bin/python scripts/summarize_a5_group_analysis.py \
@@ -601,6 +631,19 @@ outputs/a5/summary/
 └── README.md
 ```
 
+Final model：
+
+```text
+outputs/final_model/
+├── README.md
+├── final_model.json
+├── final_test_summary.csv
+├── per_sample_metrics.csv
+├── group_metrics.csv
+├── selected_examples.csv
+└── figures/
+```
+
 其中：
 
 - `history.csv`：每个 epoch 的 loss / Dice / IoU；
@@ -610,9 +653,9 @@ outputs/a5/summary/
 - `eval_val/per_sample_metrics.csv`：验证集每张图单独指标；
 - `eval_val/group_metrics.csv`：验证集按类型、视角、大小分组指标；
 - `eval_test/metrics.csv`：测试集整体指标，用于 A5 综合比较；
-- `eval_test/per_sample_metrics.csv`：最终测试集每张图单独指标；
-- `eval_test/group_metrics.csv`：最终测试集按类型、视角、大小分组指标；
-- `eval_test/group_visuals/`：最终测试集分组可视化图片；
+- `eval_test/per_sample_metrics.csv`：测试集每张图单独指标，用于 A5 综合比较；
+- `eval_test/group_metrics.csv`：测试集按类型、视角、大小分组指标，用于 A5 综合比较；
+- `eval_test/group_visuals/`：测试集分组可视化图片，用于误差现象展示；
 - `readable_checkpoint/`：可读模型结构和参数统计。
 
 ---
@@ -642,17 +685,23 @@ README.md
 
 ---
 
-## 9. 后续计划
+## 9. 最终整理状态
 
-后续可选工作：
+当前不再继续优化 A3，项目进入最终报告整理阶段。
 
 ```text
-调参：A3 boundary_weight / A4 learning rate 与 epochs
+最终主模型：原始 A3（U-Net + Boundary Loss）
+主结果：test Dice = 0.8075，test IoU = 0.7271
+A3 tuning：补充分析和后续优化探索，不替代最终主结果
+Final model summary：outputs/final_model/final_model.json
+Final visualization：outputs/final_model/figures/
 ```
 
-重点观察：
+最终报告重点：
 
-- A3 的 boundary_weight 是否还能进一步提升；
-- A4 是否需要更低学习率或更多 epoch；
-- small tumor 组为什么 A1 最高；
-- glioma 是否需要单独增强或类别针对性分析。
+- 说明 A1-A4 训练只使用 train，并从 train 内部划分 validation 保存 best checkpoint；
+- 使用 A5 汇总 A1-A4 的独立测试集结果，说明 A3 original 是整体最优；
+- 将 A3 tuning 定位为 validation-based supplemental tuning；
+- 说明 A3 tuning 的 fixed candidate final test 未超过原始 A3；
+- 展示 final model 在 test split 上的 overall / tumor / view / size 可视化；
+- 分析 small tumor 和 glioma 仍是主要困难点。

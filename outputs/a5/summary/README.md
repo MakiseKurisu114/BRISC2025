@@ -1,8 +1,8 @@
 # A5 分组综合分析摘要
 
-A5 汇总 A1-A4 已有测试集结果，不重新训练模型。
+A5 汇总 A1-A4 已有 `eval_test` 结果，不重新训练模型。
 
-A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation set 保存 best checkpoint；A5 使用这些固定 checkpoint 的 test 结果进行综合比较。
+A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation set 保存 best checkpoint；test set 不参与训练，也不参与 checkpoint 保存。A5 使用这些固定 checkpoint 的 `eval_test` 结果进行综合比较，并选择原始 A3 作为后续调参基础模型。
 
 ## 独立测试集整体指标
 
@@ -35,3 +35,5 @@ A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation 
 - 当前控制变量对比中，Boundary Loss 是最明确有效的改进。
 - 当前超参数下，Attention U-Net + Boundary Loss 没有超过 U-Net + Boundary Loss。
 - A5 选择 A3 作为后续调参基础模型。
+- 最终报告主模型采用原始 A3，其测试集 Dice = 0.8075，IoU = 0.7271。
+- A3 tuning 仅作为后续补充优化探索；若 tuning final test 未超过原始 A3，不替代 A5 选出的原始 A3 主结果。

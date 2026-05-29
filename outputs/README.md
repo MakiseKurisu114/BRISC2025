@@ -237,7 +237,7 @@ test_iou  = 0.7093
 outputs/a5/summary/
 ```
 
-A5 不重新训练模型，汇总 A1-A4 已有测试集整体指标和分组指标。A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation set 保存 best checkpoint；A5 使用固定 checkpoint 的 test 结果做综合比较。
+A5 不重新训练模型，汇总 A1-A4 已有测试集整体指标和分组指标。A1-A4 训练阶段只使用 train 数据，并从 train 内部划分 validation set 保存 best checkpoint；test set 不参与训练，也不参与 checkpoint 保存。A5 使用固定 checkpoint 的 `eval_test` 结果做综合比较，并选择原始 A3 作为后续调参基础模型。
 
 主要文件：
 
@@ -289,9 +289,9 @@ large tumor IoU：A3 最优
 outputs/a3_tuning/
 ```
 
-该目录保存 A3 tuning 的已有 checkpoint、validation 选择结果和固定最终配置后的 test 评估结果，未覆盖原始 A3。
+该目录保存 A3 tuning 的已有 checkpoint、validation 选择结果和固定候选配置后的 test 评估结果，未覆盖原始 A3。
 
-A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
+A3 tuning 是基于 A5 选择出的原始 A3 进行的补充优化探索。该阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择候选配置。固定该候选配置后，仅在 test set 上进行一次 final test evaluation；test set 不用于 tuning 过程中的模型或 threshold 选择。
 
 判断规则：
 
@@ -299,7 +299,7 @@ A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 bou
 boundary_weight / image_size / loss variant：val Dice / val IoU
 small oversampling：val Dice / val IoU / small tumor val 指标
 threshold：validation threshold sweep
-final fixed config：test Dice / test IoU
+fixed tuning candidate：test Dice / test IoU
 ```
 
 基础实验设置：
@@ -329,18 +329,73 @@ final_test_examples_worst_best.png
 
 ```text
 validation set: 选择模型设置和 threshold
-test set      : 固定最终配置后进行一次最终评估
+test set      : 固定 tuning candidate 后进行一次 final test evaluation
 metric        : per-sample mean
 ```
 
-Validation set 选出的最终配置：
+Validation set 选出的 tuning 候选配置：
 
 | candidate | threshold | val Dice | val IoU | val Precision | val Recall |
 |---|---:|---:|---:|---:|---:|
 | A3_boundary_w03 | 0.30 | 0.8052 | 0.7241 | 0.8335 | 0.8205 |
 
-Final test 结果：
+Tuning candidate final test 结果：
 
 | candidate | threshold | test Dice | test IoU | test Precision | test Recall |
 |---|---:|---:|---:|---:|---:|
 | A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
+
+最终主结果仍采用原始 A3：
+
+```text
+model = A3 original: U-Net + Boundary Loss
+test_dice = 0.8075
+test_iou  = 0.7271
+```
+
+A3 tuning 的固定候选配置 final test 未超过原始 A3，因此 A3 tuning 作为补充分析和后续优化探索，不替代原始 A3 作为最终主结果。
+
+## Final Model
+
+```text
+outputs/final_model/
+```
+
+该目录根据已有结果文件自动汇总 final model 选择，并保存 final model 在 `segmentation_task/test` 上的最终推理结果、分组统计和可视化展示。不复制 `.pt` 权重文件，只引用原 checkpoint 路径。
+
+主要文件：
+
+```text
+README.md                 final model 选择说明、推理结果和可视化说明
+final_model.json          机器可读的 final model 选择依据、候选指标和最终选择
+final_test_summary.csv    final model 在 test split 上的整体指标
+per_sample_metrics.csv    每张测试图的 Dice / IoU / Precision / Recall
+group_metrics.csv         tumor / view / size 分组指标
+selected_examples.csv     各可视化图选中的 best / typical / worst 样本
+figures/                  overall / tumor / view / size 可视化图片
+```
+
+选择依据来自 `outputs/final_model/final_model.json`：A1-A4 主实验先按 independent test Dice 选择，接近或并列时再看 test IoU；随后将 A3 tuning final candidate 与主实验最佳模型比较。当前 final model 仍为原始 A3（U-Net + Boundary Loss），checkpoint = `outputs/a3/full/checkpoints/best_unet_boundary.pt`，threshold = 0.50，test Dice = 0.8075，test IoU = 0.7271。A3 tuning final candidate 未超过原始 A3，因此作为 supplemental tuning experiment 保留。
+
+Final inference 已完成：
+
+```text
+split = segmentation_task/test
+per-sample mean Dice = 0.8069
+per-sample mean IoU  = 0.7263
+```
+
+生成的最终展示图片：
+
+```text
+figures/overall_examples.png
+figures/tumor_glioma_examples.png
+figures/tumor_meningioma_examples.png
+figures/tumor_pituitary_examples.png
+figures/view_axial_examples.png
+figures/view_coronal_examples.png
+figures/view_sagittal_examples.png
+figures/size_small_examples.png
+figures/size_medium_examples.png
+figures/size_large_examples.png
+```

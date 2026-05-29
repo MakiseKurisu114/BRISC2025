@@ -59,8 +59,8 @@ def build_model(name: str, base_channels: int) -> torch.nn.Module:
 
 def parse_name(name: str) -> tuple[str, str]:
     parts = name.split("_")
-    tumor = TUMOR_NAMES.get(parts[3], parts[3]) if len(parts) > 4 else "unknown"
-    view = VIEW_NAMES.get(parts[4], parts[4]) if len(parts) > 5 else "unknown"
+    tumor = TUMOR_NAMES.get(parts[3], parts[3]) if len(parts) > 3 else "unknown"
+    view = VIEW_NAMES.get(parts[4], parts[4]) if len(parts) > 4 else "unknown"
     return tumor, view
 
 
