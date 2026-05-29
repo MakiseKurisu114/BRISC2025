@@ -293,6 +293,15 @@ outputs/a3_tuning/
 
 A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
+判断规则：
+
+```text
+boundary_weight / image_size / loss variant：val Dice / val IoU
+small oversampling：val Dice / val IoU / small tumor val 指标
+threshold：validation threshold sweep
+final fixed config：test Dice / test IoU
+```
+
 基础实验设置：
 
 ```text

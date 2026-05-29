@@ -214,6 +214,17 @@ A5 各分组最优模型：
 
 A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
+判断规则：
+
+| A3 tuning 内容 | 判断依据 |
+|---|---|
+| boundary_weight | val Dice / val IoU |
+| image_size | val Dice / val IoU |
+| small oversampling 权重 | val Dice / val IoU / small tumor val 指标 |
+| Focal Tversky 等 loss variant | val Dice / val IoU |
+| threshold | val Dice / val IoU |
+| final fixed config | test Dice / test IoU |
+
 规范选择结果保存在：
 
 ```text

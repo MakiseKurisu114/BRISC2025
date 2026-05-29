@@ -5,6 +5,29 @@
 A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
 `legacy_test_exploration_not_for_selection.csv` 是历史测试记录，仅保留作结果追溯，不用于模型选择或调参。
+`threshold_sweep/` 是历史阈值扫描记录，也不用于 threshold 选择；当前 threshold 选择只看 `threshold_sweep_val.csv`。
+
+## Decision Rules
+
+| A3 tuning 内容 | 判断依据 | 结果文件 |
+|---|---|---|
+| boundary_weight=0.05/0.1/0.2/0.3/0.5 | val Dice / val IoU | `summary_val.csv` |
+| image_size=128/192/256 | val Dice / val IoU | `summary_val.csv` |
+| small oversampling 权重 | val Dice / val IoU / small tumor val 指标 | `summary_val.csv`, `summary_val_group_metrics.csv` |
+| Focal Tversky 等 loss variant | val Dice / val IoU | `summary_val.csv` |
+| threshold=0.30/0.35/0.40/0.45/0.50/0.55/0.60 | val Dice / val IoU | `threshold_sweep_val.csv` |
+| final fixed config 泛化表现 | test Dice / test IoU | `final_test.csv` |
+
+按 validation per-sample mean Dice 的当前综合选择：
+
+| tuning family | validation 选择 | threshold | val Dice | val IoU | small val Dice | small val IoU |
+|---|---|---:|---:|---:|---:|---:|
+| boundary weight | A3_boundary_w03 | 0.30 | 0.8052 | 0.7241 | 0.7685 | 0.6827 |
+| image size | A3_original_boundary_w02 | 0.50 | 0.8033 | 0.7216 | 0.7549 | 0.6668 |
+| oversampling | A3_original_boundary_w02 | 0.50 | 0.8033 | 0.7216 | 0.7549 | 0.6668 |
+| loss variant | A3_original_boundary_w02 | 0.50 | 0.8033 | 0.7216 | 0.7549 | 0.6668 |
+
+small oversampling w=3 的 small val Dice / IoU 为 0.7716 / 0.6879，高于 A3 original，但 overall val Dice / IoU 为 0.7932 / 0.7103，因此不作为综合 final config。
 
 ## Final Selection
 
