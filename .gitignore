@@ -19,6 +19,7 @@ env/
 .vscode/
 .agents/
 .codex/
+docs/
 
 # Kaggle / secrets
 kaggle.json
