@@ -1,8 +1,8 @@
-# Final Model Summary
+# Final Model 总结
 
-This directory summarizes the final model selection and the final inference / visualization run. No training was rerun, no dataset file was modified, and no checkpoint file was copied or changed.
+本目录汇总最终模型选择、final inference 结果和最终可视化展示。本阶段没有重新训练模型，没有修改数据集文件，也没有复制或修改 `.pt` checkpoint。
 
-Source files:
+最终模型选择读取的已有结果文件：
 
 ```text
 outputs/a5/summary/overall_test_metrics.csv
@@ -11,27 +11,27 @@ outputs/a3_tuning/final_test.csv
 outputs/a3_tuning/final_selection.json
 ```
 
-Selection rule:
+选择规则：
 
-1. Select the best A1-A4 main experiment by independent test Dice from `overall_test_metrics.csv`.
-2. If test Dice is tied or very close, compare test IoU.
-3. Compare the A3 tuning final candidate from `final_test.csv` against the best main experiment.
-4. Only replace the main-experiment winner if the tuning candidate has higher final test Dice / IoU.
-5. Do not use validation metrics alone to select the final model.
+1. 先从 `overall_test_metrics.csv` 中选择 A1-A4 主实验里 independent test Dice 最高的模型。
+2. 如果 test Dice 并列或非常接近，再比较 test IoU。
+3. 再把 `final_test.csv` 中的 A3 tuning final candidate 与主实验最佳模型比较。
+4. 只有当 tuning candidate 的 final test Dice / IoU 超过主实验最佳模型时，才替代主实验最佳模型。
+5. 不因为 validation 指标更高就直接选择 tuning candidate 作为 final model。
 
-## Candidate Comparison
+## 候选模型对比
 
 | candidate | role | method | checkpoint | threshold | test Dice | test IoU | selection source |
 |---|---|---|---|---:|---:|---:|---|
-| A1 | main experiment | U-Net | `outputs/a1/full/checkpoints/best_unet.pt` | 0.50 | 0.7930 | 0.7078 | `overall_test_metrics.csv` |
-| A2 | main experiment | Attention U-Net | `outputs/a2/full/checkpoints/best_attention_unet.pt` | 0.50 | 0.7937 | 0.7087 | `overall_test_metrics.csv` |
-| A3 | main experiment | U-Net + Boundary Loss | `outputs/a3/full/checkpoints/best_unet_boundary.pt` | 0.50 | 0.8075 | 0.7271 | `overall_test_metrics.csv` |
-| A4 | main experiment | Attention U-Net + Boundary Loss | `outputs/a4/full/checkpoints/best_attention_unet_boundary.pt` | 0.50 | 0.7923 | 0.7093 | `overall_test_metrics.csv` |
+| A1 | 主实验 | U-Net | `outputs/a1/full/checkpoints/best_unet.pt` | 0.50 | 0.7930 | 0.7078 | `overall_test_metrics.csv` |
+| A2 | 主实验 | Attention U-Net | `outputs/a2/full/checkpoints/best_attention_unet.pt` | 0.50 | 0.7937 | 0.7087 | `overall_test_metrics.csv` |
+| A3 | 主实验 | U-Net + Boundary Loss | `outputs/a3/full/checkpoints/best_unet_boundary.pt` | 0.50 | 0.8075 | 0.7271 | `overall_test_metrics.csv` |
+| A4 | 主实验 | Attention U-Net + Boundary Loss | `outputs/a4/full/checkpoints/best_attention_unet_boundary.pt` | 0.50 | 0.7923 | 0.7093 | `overall_test_metrics.csv` |
 | A3_boundary_w03 | supplemental tuning final candidate | U-Net + Boundary Loss, boundary_weight=0.3 | `outputs/a3_tuning/boundary_w03/full/checkpoints/best_unet_boundary.pt` | 0.30 | 0.7986 | 0.7164 | `final_selection.json` + `final_test.csv` |
 
-## Final Selection
+## 最终选择
 
-Final model:
+最终模型：
 
 ```text
 experiment = A3
@@ -42,13 +42,13 @@ test Dice  = 0.8075
 test IoU   = 0.7271
 ```
 
-The `.pt` file is not copied into this directory. The final model summary only references the original checkpoint path.
+本目录不复制 `.pt` 文件，只引用原始 checkpoint 路径。
 
-A3 is selected because it is the best A1-A4 main experiment on the independent test set by test Dice, and it also has the highest test IoU among A1-A4. A3 tuning is a validation-based supplemental tuning experiment: `A3_boundary_w03 + threshold 0.30` was selected from validation metrics, then evaluated once on the test set. Its final test Dice = 0.7986 and final test IoU = 0.7164 do not exceed original A3, so it does not replace the final model.
+选择 A3 的原因是：A3 是 A1-A4 主实验中 independent test Dice 最高的模型，同时也是 A1-A4 中 test IoU 最高的模型。A3 tuning 是 validation-based supplemental tuning experiment：`A3_boundary_w03 + threshold 0.30` 是根据 validation 指标选出的候选配置，随后只在 test set 上做一次 final test evaluation。其 final test Dice = 0.7986、final test IoU = 0.7164，没有超过原始 A3，因此不替代最终模型。
 
 ## Final Inference
 
-Final inference was run on:
+final inference 使用：
 
 ```text
 split      = segmentation_task/test
@@ -58,7 +58,7 @@ threshold  = 0.50
 n_samples  = 860
 ```
 
-New final inference outputs saved in this directory:
+本次 final inference 在当前目录下生成：
 
 ```text
 per_sample_metrics.csv
@@ -68,73 +68,73 @@ selected_examples.csv
 figures/
 ```
 
-Final inference summary from `final_test_summary.csv`:
+`final_test_summary.csv` 中的 final inference 整体结果：
 
 | split | n | Dice | IoU | Precision | Recall |
 |---|---:|---:|---:|---:|---:|
 | segmentation_task/test | 860 | 0.8069 | 0.7263 | 0.8221 | 0.8442 |
 
-The small difference from the A5 selection table is due to this final run reporting the mean of `per_sample_metrics.csv`; final model selection still follows `final_model.json` and the A5 summary rule.
+这里与 A5 选择表中的数值存在很小差异，是因为本次 final inference 汇总的是 `per_sample_metrics.csv` 的逐样本均值；最终模型选择仍以 `final_model.json` 记录的 A5 选择逻辑为准。
 
-## Output Files
+## 输出文件
 
 | file | description |
 |---|---|
-| `final_model.json` | machine-readable final model selection, source files, selected checkpoint, and final inference outputs |
-| `final_test_summary.csv` | overall final inference metrics on `segmentation_task/test` |
-| `per_sample_metrics.csv` | per-image Dice / IoU / Precision / Recall with tumor, view, and size group |
-| `group_metrics.csv` | mean metrics by tumor type, imaging view, and size group |
-| `selected_examples.csv` | samples selected for each visualization figure |
+| `final_model.json` | 机器可读的 final model 选择依据、来源文件、checkpoint 和 final inference 输出记录 |
+| `final_test_summary.csv` | final model 在 `segmentation_task/test` 上的整体指标 |
+| `per_sample_metrics.csv` | 每张测试图的 Dice / IoU / Precision / Recall，以及 tumor / view / size 分组 |
+| `group_metrics.csv` | 按 tumor type、view、size group 汇总的平均指标 |
+| `selected_examples.csv` | 每张可视化图选中的代表样本 |
 | `figures/*.png` | final qualitative examples |
 
-## Visualizations
+## 可视化结果
 
-All qualitative figures are saved under `outputs/final_model/figures/`.
+所有最终可视化图片保存在 `outputs/final_model/figures/`。
 
 | figure | content |
 |---|---|
-| `overall_examples.png` | 2 worst, 2 typical, and 2 best overall examples |
-| `tumor_glioma_examples.png` | glioma worst / typical / best examples |
-| `tumor_meningioma_examples.png` | meningioma worst / typical / best examples |
-| `tumor_pituitary_examples.png` | pituitary worst / typical / best examples |
-| `view_axial_examples.png` | axial worst / typical / best examples |
-| `view_coronal_examples.png` | coronal worst / typical / best examples |
-| `view_sagittal_examples.png` | sagittal worst / typical / best examples |
-| `size_small_examples.png` | small tumor worst / typical / best examples |
-| `size_medium_examples.png` | medium tumor worst / typical / best examples |
-| `size_large_examples.png` | large tumor worst / typical / best examples |
+| `overall_examples.png` | overall 的 2 个 worst、2 个 typical、2 个 best 样本 |
+| `tumor_glioma_examples.png` | glioma 的 worst / typical / best 样本 |
+| `tumor_meningioma_examples.png` | meningioma 的 worst / typical / best 样本 |
+| `tumor_pituitary_examples.png` | pituitary 的 worst / typical / best 样本 |
+| `view_axial_examples.png` | axial 的 worst / typical / best 样本 |
+| `view_coronal_examples.png` | coronal 的 worst / typical / best 样本 |
+| `view_sagittal_examples.png` | sagittal 的 worst / typical / best 样本 |
+| `size_small_examples.png` | small tumor 的 worst / typical / best 样本 |
+| `size_medium_examples.png` | medium tumor 的 worst / typical / best 样本 |
+| `size_large_examples.png` | large tumor 的 worst / typical / best 样本 |
 
-Each row shows MRI, ground truth mask, predicted mask, and an overlay. In overlays, ground truth contours are green and predicted contours are red.
+每行依次展示 MRI、ground truth mask、predicted mask 和 contour overlay。overlay 中绿色轮廓表示 ground truth，红色轮廓表示 prediction。
 
-Representative sample selection:
+代表样本选择规则：
 
-- best: highest Dice in the group;
-- worst: lowest Dice in the group;
-- typical / median: Dice closest to the group median;
-- overall: two best, two worst, and two samples closest to the overall median Dice;
-- if a group has duplicate selections because of a very small sample count, duplicates are removed.
+- best：组内 Dice 最高；
+- worst：组内 Dice 最低；
+- typical / median：Dice 最接近组内中位数；
+- overall：选择 2 个 best、2 个 worst 和 2 个最接近 overall median Dice 的样本；
+- 如果某个组样本很少导致重复选择，则去除重复样本。
 
-## Group Notes
+## 分组观察
 
-From `best_by_group.csv`, A3 is strongest across many groups, including glioma, meningioma, all three imaging views, and medium tumors. However, the small tumor group is best with A1 rather than A3, showing that small tumor segmentation remains a key difficulty and that the group-wise best model is not always the overall final model.
+根据 `best_by_group.csv`，A3 在 glioma、meningioma、三个 view 和 medium tumor 等多个分组上表现较强。但 small tumor 组的最优模型是 A1 而不是 A3，说明小目标分割仍然是困难点，也说明分组最优模型不一定等于整体最终模型。
 
-Final inference group means:
+本次 final inference 的分组均值：
 
-| group type | group | n | Dice | IoU | main observation |
+| group type | group | n | Dice | IoU | 主要观察 |
 |---|---|---:|---:|---:|---|
-| tumor | glioma | 254 | 0.6619 | 0.5619 | hardest tumor type |
-| tumor | meningioma | 306 | 0.9099 | 0.8552 | strongest tumor-type performance |
-| tumor | pituitary | 300 | 0.8244 | 0.7340 | good overall, but small pituitary failures remain |
-| view | axial | 346 | 0.8015 | 0.7252 | stable |
-| view | coronal | 257 | 0.8041 | 0.7193 | stable |
-| view | sagittal | 257 | 0.8168 | 0.7348 | slightly highest view Dice |
-| size | small < 1% | 346 | 0.7542 | 0.6638 | still difficult, with multiple near-miss failures |
-| size | medium 1%-5% | 454 | 0.8423 | 0.7667 | best size group by Dice |
-| size | large > 5% | 60 | 0.8424 | 0.7809 | high IoU on average, but rare severe failures exist |
+| tumor | glioma | 254 | 0.6619 | 0.5619 | 最困难的 tumor type |
+| tumor | meningioma | 306 | 0.9099 | 0.8552 | tumor type 中表现最好 |
+| tumor | pituitary | 300 | 0.8244 | 0.7340 | 整体较好，但 small pituitary 仍有失败样本 |
+| view | axial | 346 | 0.8015 | 0.7252 | 表现稳定 |
+| view | coronal | 257 | 0.8041 | 0.7193 | 表现稳定 |
+| view | sagittal | 257 | 0.8168 | 0.7348 | view 组中 Dice 略高 |
+| size | small < 1% | 346 | 0.7542 | 0.6638 | 仍然困难，存在多个接近漏检的失败案例 |
+| size | medium 1%-5% | 454 | 0.8423 | 0.7667 | size 组中 Dice 最好 |
+| size | large > 5% | 60 | 0.8424 | 0.7809 | 平均 IoU 较高，但仍有少数严重失败案例 |
 
-Typical success cases have close overlap between green and red contours, especially for meningioma and medium-size tumors. Failure cases often show missed or weak predictions for subtle small lesions, and several worst examples have Dice near zero.
+典型成功案例中，绿色 GT 轮廓和红色预测轮廓高度重合，尤其在 meningioma 和 medium tumor 中更明显。失败案例多出现在小病灶或低对比度区域，部分 worst 样本 Dice 接近 0。
 
-Machine-readable selection details are saved in:
+机器可读的 final model 选择和 final inference 记录保存在：
 
 ```text
 outputs/final_model/final_model.json
