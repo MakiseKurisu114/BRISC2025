@@ -244,60 +244,23 @@ A5 综合分组结论：
 - small tumor 组 A1 最高，说明 Boundary Loss 并没有在当前设置下稳定改善小目标；
 - A4 没有超过 A3，说明 Attention Gate 与 Boundary Loss 的简单叠加没有带来额外收益。
 
-### A3 tuning exploratory analysis
+### A3 tuning validation-based selection
 
-以下 A3 tuning 表格是早期探索性分析结果，保留用于说明不同策略的现象和风险；这些结果不再作为最终模型/超参数选择依据。严格 final 流程见下一节：模型设置和 threshold 只基于 validation set 选择，test set 只用于最终固定配置的一次泛化评估。
+A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
-A3 高分辨率与后续调参探索：
-
-| 实验 | image_size | test Dice | test IoU | small Dice | small IoU |
-|---|---:|---:|---:|---:|---:|
-| A3 original | 128 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
-| A3 image_size 192 | 192 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
-| A3 image_size 256 | 256 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
-| A3 small oversampling w=1.5 | 128 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
-| A3 small oversampling w=2.0 | 128 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
-| A3 small oversampling w=3 | 128 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
-| A3 Focal Tversky w=0.2 | 128 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
-| A3 Boundary w=0.05 | 128 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
-| A3 Boundary w=0.1 | 128 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
-| A3 Boundary w=0.3 | 128 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
-| A3 Boundary w=0.5 | 128 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
-
-探索性结论：单纯提高输入分辨率没有改善 small tumor，整体性能也下降。Focal Tversky w=0.2 没有提升 small tumor。Boundary w=0.5 在 test exploratory analysis 中表现较好，但不能作为 final 选参依据。
-
-small tumor oversampling 存在 tradeoff：`w=3.0` 的 small 组最好，但整体下降；`w=2.0` 的 overall 折中最好，但 small 未超过原 A3。
-
-A3 阈值扫描：
-
-```text
-threshold = 0.30 / 0.35 / 0.40 / 0.45 / 0.50
-```
-
-扫描 A3 original 和 A3 small oversampling w=3 后发现，降低阈值没有提升 small tumor；两者都是默认 `threshold=0.50` 的 small Dice / IoU 最好。因此 small tumor 的问题不主要是后处理阈值过高。
-
-对 A3 Boundary w=0.5 的 test threshold sweep 同样属于 exploratory analysis。当前不使用小连通域删除，避免误删真实 small tumor。
-
-完整 `threshold=0.60` 测试集评估已保存到：
-
-```text
-outputs/a3_tuning/boundary_w05/full/eval_test_thr060/
-```
-
-### A3 tuning validation-based correction
-
-为避免使用 test set 调参，已在现有 `outputs/a3_tuning/` 下新增规范选择结果：
+规范选择结果保存在：
 
 ```text
 outputs/a3_tuning/summary_val.csv
 outputs/a3_tuning/threshold_sweep_val.csv
+outputs/a3_tuning/final_selection.json
 outputs/a3_tuning/final_test.csv
 ```
 
 选择规则：
 
 ```text
-val set 上比较 A3 tuning 候选 checkpoint/config 和 threshold；
+validation set 上比较 A3 tuning 候选 checkpoint/config 和 threshold；
 选择 validation per-sample mean Dice 最高的配置；
 固定该配置后，只对 test set 做一次 final evaluation。
 ```
@@ -314,7 +277,7 @@ final test 结果：
 |---|---:|---:|---:|---:|---:|
 | A3_boundary_w03 | 0.30 | 0.7986 | 0.7164 | 0.8235 | 0.8311 |
 
-final 流程统一使用 per-sample mean，避免旧脚本中 batch mean 和 per-sample mean 混用。
+final 流程统一使用 per-sample mean。
 
 ---
 

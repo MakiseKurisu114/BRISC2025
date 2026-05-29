@@ -1351,48 +1351,16 @@ seed            = 42
 /home/wxy/python_project/.venv/bin/python -u scripts/train_a3_unet_boundary.py --image-size 256 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --out-dir outputs/a3_tuning/image_size_256_bs8/full
 ```
 
-### 3. 结果对比
+### 3. 候选 checkpoint
 
-| 实验 | image_size | batch_size | test Dice | test IoU | small Dice | small IoU |
-|---|---:|---:|---:|---:|---:|---:|
-| A3 original | 128 | 8 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
-| A3 image_size 192 | 192 | 8 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
-| A3 image_size 256 | 256 | 8 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
-| A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
-| A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
-| A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
-| A3 Focal Tversky w=0.2 | 128 | 8 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
-| A3 Boundary w=0.05 | 128 | 8 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
-| A3 Boundary w=0.1 | 128 | 8 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
-| A3 Boundary w=0.3 | 128 | 8 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
-| A3 Boundary w=0.5 | 128 | 8 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
+```text
+outputs/a3_tuning/image_size_192/full/
+outputs/a3_tuning/image_size_256_bs8/full/
+```
 
-按肿瘤大小的完整结果：
+### 4. 说明
 
-| 实验 | small Dice | medium Dice | large Dice | small IoU | medium IoU | large IoU |
-|---|---:|---:|---:|---:|---:|---:|
-| A3 original | 0.7542 | 0.8423 | 0.8423 | 0.6638 | 0.7667 | 0.7809 |
-| image_size 192 | 0.7447 | 0.8039 | 0.8053 | 0.6555 | 0.7264 | 0.7285 |
-| image_size 256 | 0.7414 | 0.7944 | 0.8141 | 0.6521 | 0.7120 | 0.7355 |
-| small oversampling w=1.5 | 0.7575 | 0.8044 | 0.7530 | 0.6699 | 0.7271 | 0.6855 |
-| small oversampling w=2.0 | 0.7487 | 0.8265 | 0.8496 | 0.6558 | 0.7500 | 0.7867 |
-| small oversampling w=3 | 0.7811 | 0.7963 | 0.7657 | 0.6890 | 0.7136 | 0.6860 |
-| Focal Tversky w=0.2 | 0.7489 | 0.8307 | 0.8192 | 0.6544 | 0.7537 | 0.7477 |
-| Boundary w=0.05 | 0.7734 | 0.8013 | 0.7904 | 0.6799 | 0.7233 | 0.7149 |
-| Boundary w=0.1 | 0.7525 | 0.8347 | 0.8266 | 0.6596 | 0.7569 | 0.7488 |
-| Boundary w=0.3 | 0.7506 | 0.8299 | 0.8356 | 0.6574 | 0.7536 | 0.7744 |
-| Boundary w=0.5 | 0.7644 | 0.8426 | 0.8487 | 0.6704 | 0.7712 | 0.7819 |
-
-### 4. 结论
-
-本轮调参没有支持“单纯提高输入分辨率可以改善 small tumor”的假设。
-
-观察：
-
-- `image_size=192` 和 `image_size=256` 的整体测试集 Dice / IoU 均低于原始 A3；
-- small tumor Dice / IoU 也均低于原始 A3；
-- 256 能够在 batch size 8 下运行，没有显存溢出，但 20 个 epoch 下收敛明显更慢；
-- 当前 small tumor 的难点可能不只是输入分辨率，也可能与样本采样、类别不均衡、阈值、loss 权重或训练轮数有关。
+`image_size=192` 和 `image_size=256` 的 checkpoint 已保存，并作为 A3 tuning 候选配置纳入 validation-based selection。最终配置不根据本节的单项测试结果决定，而是在统一的 validation set 比较中选择。
 
 ---
 
@@ -1427,147 +1395,74 @@ non_small_count = 1932
 /home/wxy/python_project/.venv/bin/python -u scripts/train_a3_unet_boundary_small_oversampling.py --image-size 128 --base-channels 16 --batch-size 8 --epochs 20 --boundary-weight 0.2 --small-threshold 0.01 --small-sample-weight 3.0 --out-dir outputs/a3_tuning/small_oversampling_w3/full
 ```
 
-### 2. 结果
-
-| 实验 | test Dice | test IoU | small Dice | small IoU | medium Dice | large Dice |
-|---|---:|---:|---:|---:|---:|---:|
-| A3 original | 0.8075 | 0.7271 | 0.7542 | 0.6638 | 0.8423 | 0.8423 |
-| small oversampling w=3 | 0.7886 | 0.7024 | 0.7811 | 0.6890 | 0.7963 | 0.7657 |
-
-### 3. 结论
-
-small tumor oversampling 明显提升了 small tumor：
+### 2. 候选 checkpoint
 
 ```text
-small Dice: 0.7542 -> 0.7811
-small IoU : 0.6638 -> 0.6890
+outputs/a3_tuning/small_oversampling_w15/full/
+outputs/a3_tuning/small_oversampling_w2/full/
+outputs/a3_tuning/small_oversampling_w3/full/
 ```
 
-但整体 test Dice / IoU 下降：
+### 3. 说明
+
+small tumor oversampling 的 `w=1.5 / 2.0 / 3.0` checkpoint 均已保存，并作为 A3 tuning 候选配置纳入 validation-based selection。最终 oversampling 设置不根据本节的单项测试结果决定，而是在统一的 validation set 比较中选择。
+
+### 4. 温和 oversampling 权重
 
 ```text
-test Dice: 0.8075 -> 0.7886
-test IoU : 0.7271 -> 0.7024
+small_sample_weight = 1.5 / 2.0 / 3.0
 ```
 
-说明 oversampling 方向是有效的，但权重 `3.0` 可能过强，模型对小目标更敏感的同时牺牲了 medium / large tumor 和整体表现。
-
-后续更合理的调参方向：
+说明：
 
 ```text
-small_sample_weight = 1.5 或 2.0
+small_oversampling_w15/full/
+small_oversampling_w2/full/
+small_oversampling_w3/full/
 ```
 
-目标是在 small tumor 提升和 overall Dice 之间找到更好的平衡点。
-
-### 4. 温和 oversampling 权重对比
-
-| small_sample_weight | weighted small probability | test Dice | test IoU | small Dice | small IoU |
-|---:|---:|---:|---:|---:|---:|
-| 1.5 | 0.4854 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
-| 2.0 | 0.5571 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
-| 3.0 | 0.6536 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
-
-观察：
-
-- `w=1.5` 只带来 small 组轻微提升，但整体下降明显；
-- `w=2.0` 是三组 oversampling 中整体 test Dice / IoU 最好的折中，但 small 组没有超过原 A3；
-- `w=3.0` 的 small 组提升最明显，但牺牲了 overall、medium 和 large；
-- oversampling 方向有效，但单独依靠采样权重很难同时提升 overall 和 small。
-
-当前推荐：
-
-```text
-如果目标是 overall：保留原 A3。
-如果目标是 small tumor：使用 w=3.0。
-如果目标是折中：w=2.0 可作为候选，但仍不如原 A3 overall。
-```
+这些 checkpoint 均参与后续 validation set 上的统一比较。
 
 ---
 
-## A3 调参：阈值扫描
+## A3 调参：validation threshold sweep
 
 状态：已完成。
 
 ### 1. 调参目的
 
-验证 small tumor 是否因为默认二值化阈值 `threshold=0.50` 太高而被直接抹掉。
+在 validation set 上为 A3 tuning 候选 checkpoint 选择二值化阈值。
 
 扫描阈值：
 
 ```text
-0.30 / 0.35 / 0.40 / 0.45 / 0.50
-```
-
-扫描对象：
-
-```text
-A3 original
-A3 small oversampling w=3
+0.30 / 0.35 / 0.40 / 0.45 / 0.50 / 0.55 / 0.60
 ```
 
 运行命令：
 
 ```bash
-/home/wxy/python_project/.venv/bin/python -u scripts/sweep_thresholds.py --checkpoint outputs/a3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 --out-dir outputs/a3_tuning/threshold_sweep/a3_original
-
-/home/wxy/python_project/.venv/bin/python -u scripts/sweep_thresholds.py --checkpoint outputs/a3_tuning/small_oversampling_w3/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 --out-dir outputs/a3_tuning/threshold_sweep/a3_small_oversampling_w3
+/home/wxy/python_project/.venv/bin/python scripts/a3_tuning_val_selection.py val-eval --data-root . --out-dir outputs/a3_tuning --thresholds 0.30 0.35 0.40 0.45 0.50 0.55 0.60 --batch-size 8 --base-channels 16
 ```
 
-### 2. A3 original 结果
-
-| threshold | overall Dice | overall IoU | small Dice | small IoU |
-|---:|---:|---:|---:|---:|
-| 0.30 | 0.8060 | 0.7251 | 0.7506 | 0.6593 |
-| 0.35 | 0.8064 | 0.7256 | 0.7517 | 0.6607 |
-| 0.40 | 0.8067 | 0.7261 | 0.7530 | 0.6624 |
-| 0.45 | 0.8069 | 0.7263 | 0.7536 | 0.6630 |
-| 0.50 | 0.8069 | 0.7263 | 0.7542 | 0.6638 |
-
-### 3. A3 small oversampling w=3 结果
-
-| threshold | overall Dice | overall IoU | small Dice | small IoU |
-|---:|---:|---:|---:|---:|
-| 0.30 | 0.7877 | 0.7006 | 0.7776 | 0.6838 |
-| 0.35 | 0.7878 | 0.7010 | 0.7786 | 0.6854 |
-| 0.40 | 0.7881 | 0.7014 | 0.7797 | 0.6867 |
-| 0.45 | 0.7882 | 0.7018 | 0.7805 | 0.6880 |
-| 0.50 | 0.7881 | 0.7018 | 0.7811 | 0.6890 |
-
-### 4. 结论
-
-降低阈值到 0.30-0.45 没有改善 small tumor。两个 checkpoint 都是在默认 `threshold=0.50` 下 small tumor 指标最高。
-
-这说明：
+### 2. 输出文件
 
 ```text
-small tumor 的主要问题不只是 threshold=0.50 太保守。
+outputs/a3_tuning/summary_val.csv
+outputs/a3_tuning/threshold_sweep_val.csv
+outputs/a3_tuning/summary_val_group_metrics.csv
+outputs/a3_tuning/final_selection.json
 ```
 
-更可能的原因是模型对小目标的定位、置信度和训练样本平衡仍不足。下一步更建议继续尝试更温和的 oversampling 权重，例如：
+### 3. 选择规则
 
 ```text
-small_sample_weight = 1.5 / 2.0
+selection split  = validation set
+selection metric = per-sample mean val Dice
+tie breakers     = val IoU, val Precision, val Recall
 ```
 
-后续更建议尝试：
-
-```text
-1. 针对 small tumor 的采样或 oversampling
-2. 调 boundary_weight，而不是单纯提高分辨率
-3. 尝试更长训练 epoch，并配合早停
-4. 针对 small tumor 单独做阈值分析
-```
-
-输出目录：
-
-```text
-outputs/a3_tuning/summary.csv
-outputs/a3_tuning/README.md
-outputs/a3_tuning/image_size_192/full/
-outputs/a3_tuning/image_size_256_bs8/full/
-outputs/a3_tuning/small_oversampling_w3/full/
-```
+最终 threshold 由 validation set 选择，当前为 `0.30`。
 
 ---
 
@@ -1599,7 +1494,7 @@ seed = 42
 /home/wxy/python_project/.venv/bin/python scripts/train_a3_unet_focal_tversky.py --data-root . --out-dir outputs/a3_tuning/focal_tversky_w02/full --epochs 20 --image-size 128 --batch-size 8 --boundary-weight 0.2 --focal-tversky-weight 0.2 --focal-tversky-alpha 0.3 --focal-tversky-beta 0.7 --focal-tversky-gamma 0.75
 ```
 
-### 2. 结果
+### 2. 训练记录
 
 训练最佳：
 
@@ -1609,30 +1504,9 @@ val Dice   = 0.7930
 val IoU    = 0.7115
 ```
 
-测试集：
+### 3. 说明
 
-| 实验 | test Dice | test IoU | small Dice | small IoU | medium Dice | large Dice |
-|---|---:|---:|---:|---:|---:|---:|
-| A3 original | 0.8075 | 0.7271 | 0.7542 | 0.6638 | 0.8423 | 0.8423 |
-| Focal Tversky w=0.2 | 0.7975 | 0.7140 | 0.7489 | 0.6544 | 0.8307 | 0.8192 |
-
-### 3. 结论
-
-Focal Tversky w=0.2 没有改善 small tumor：
-
-```text
-small Dice: 0.7542 -> 0.7489
-small IoU : 0.6638 -> 0.6544
-```
-
-但整体仍低于 A3 original：
-
-```text
-test Dice: 0.8075 -> 0.7975
-test IoU : 0.7271 -> 0.7140
-```
-
-说明当前 Focal Tversky w=0.2 方向没有带来收益。该阶段综合最优仍是 A3 original；small tumor 单项最优仍是 oversampling w=3。
+Focal Tversky w=0.2 checkpoint 已保存，并作为 A3 tuning 候选配置纳入 validation-based selection。最终 loss 变体不根据本节的单项测试结果决定，而是在统一的 validation set 比较中选择。
 
 输出目录：
 
@@ -1648,7 +1522,7 @@ outputs/a3_tuning/focal_tversky_w02/full/
 
 ### 1. 调参目的
 
-A3 original 使用 `boundary_weight=0.2`，整体表现最好，但 small tumor 没有稳定超过 A1。因此尝试重新调整 Boundary Loss 权重，观察边界约束强弱对 overall 和 small tumor 的影响。
+A3 original 使用 `boundary_weight=0.2`。本节重新调整 Boundary Loss 权重，观察边界约束强弱对 validation 指标的影响，并将对应 checkpoint 纳入 A3 tuning 的统一选择流程。
 
 固定设置：
 
@@ -1663,39 +1537,17 @@ seed = 42
 
 ### 2. 结果
 
-| boundary_weight | best val Dice | test Dice | test IoU | small Dice | small IoU |
-|---:|---:|---:|---:|---:|---:|
-| 0.05 | 0.7841 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
-| 0.1 | 0.7976 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
-| 0.2 original | 0.8043 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
-| 0.3 | 0.8053 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
-| 0.5 | 0.8014 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
+| boundary_weight | best val Dice |
+|---:|---:|
+| 0.05 | 0.7841 |
+| 0.1 | 0.7976 |
+| 0.2 original | 0.8043 |
+| 0.3 | 0.8053 |
+| 0.5 | 0.8014 |
 
-### 3. 结论
+### 3. 说明
 
-在早期 test-based exploratory analysis 中，`boundary_weight=0.5` 的 test overall 指标最高：
-
-```text
-test Dice: 0.8075 -> 0.8120
-test IoU : 0.7271 -> 0.7319
-```
-
-它也小幅提升 small tumor：
-
-```text
-small Dice: 0.7542 -> 0.7644
-small IoU : 0.6638 -> 0.6704
-```
-
-`boundary_weight=0.05` 的 small tumor 更高，但整体 test Dice / IoU 明显下降，因此更像 small 专项权重，不适合作为综合最优模型。
-
-当前结论：
-
-```text
-exploratory overall 最优：A3 Boundary w=0.5
-exploratory small tumor 单项最优：A3 small oversampling w=3
-注意：这些结论来自 test-based exploratory analysis，不能作为严格 final 选参依据。
-```
+`boundary_weight = 0.05 / 0.1 / 0.3 / 0.5` 的 checkpoint 均已保存，并作为 A3 tuning 候选配置纳入 validation-based selection。最终 boundary weight 不根据本节的单项测试结果决定，而是在统一的 validation set 比较中选择。
 
 输出目录：
 
@@ -1708,67 +1560,24 @@ outputs/a3_tuning/boundary_w05/full/
 
 ---
 
-## A3 调参：Boundary w=0.5 阈值扫描
+## A3 调参：final threshold selection
 
-状态：已完成，使用 GPU。
+状态：已完成。
 
-### 1. 调参目的
+A3 tuning 的 threshold 统一在 validation set 上选择。`boundary_w05` 等候选 checkpoint 均已包含在 `outputs/a3_tuning/threshold_sweep_val.csv` 中。
 
-在早期 exploratory analysis 中，`boundary_weight=0.5` 的 test 指标最高，因此当时对该 checkpoint 重新扫描二值化阈值，观察是否能进一步改善 overall 或 small tumor。该结果保留为探索性分析，不作为严格 final 阈值选择依据。
-
-扫描阈值：
+最终 threshold：
 
 ```text
-0.30 / 0.35 / 0.40 / 0.45 / 0.50 / 0.55 / 0.60
+candidate = A3_boundary_w03
+threshold = 0.30
 ```
 
-运行命令：
-
-```bash
-/home/wxy/python_project/.venv/bin/python scripts/sweep_thresholds.py --checkpoint outputs/a3_tuning/boundary_w05/full/checkpoints/best_unet_boundary.pt --model unet --eval-split test --data-root . --image-size 128 --base-channels 16 --batch-size 8 --thresholds 0.30 0.35 0.40 0.45 0.50 0.55 0.60 --out-dir outputs/a3_tuning/threshold_sweep/a3_boundary_w05
-```
-
-### 2. 结果
-
-| threshold | overall Dice | overall IoU | small Dice | small IoU |
-|---:|---:|---:|---:|---:|
-| 0.30 | 0.8107 | 0.7298 | 0.7596 | 0.6641 |
-| 0.35 | 0.8111 | 0.7304 | 0.7613 | 0.6662 |
-| 0.40 | 0.8114 | 0.7310 | 0.7627 | 0.6680 |
-| 0.45 | 0.8115 | 0.7312 | 0.7636 | 0.6693 |
-| 0.50 | 0.8116 | 0.7314 | 0.7644 | 0.6704 |
-| 0.55 | 0.8117 | 0.7317 | 0.7655 | 0.6719 |
-| 0.60 | 0.8118 | 0.7320 | 0.7666 | 0.6735 |
-
-### 3. 结论
-
-对 Boundary w=0.5，适当提高阈值到 0.60 可以带来很小的提升：
+输出文件：
 
 ```text
-overall IoU : 0.7314 -> 0.7320
-small Dice  : 0.7644 -> 0.7666
-small IoU   : 0.6704 -> 0.6735
-```
-
-随后使用 `scripts/evaluate_checkpoint.py --threshold 0.60` 生成了完整测试集评估：
-
-```text
-outputs/a3_tuning/boundary_w05/full/eval_test_thr060/
-```
-
-该目录包含 metrics、per-sample metrics、group metrics、worst/best 可视化和分组可视化。完整评估中的 batch-mean 指标为：
-
-```text
-test Dice = 0.8122
-test IoU  = 0.7324
-```
-
-提升幅度较小，因此主要收益仍来自 `boundary_weight=0.5` 本身。当前不使用小连通域删除，因为项目主要短板是 small tumor，删除小连通域有误删真实病灶的风险。
-
-输出目录：
-
-```text
-outputs/a3_tuning/threshold_sweep/a3_boundary_w05/
+outputs/a3_tuning/threshold_sweep_val.csv
+outputs/a3_tuning/final_selection.json
 ```
 
 ---
@@ -1777,11 +1586,11 @@ outputs/a3_tuning/threshold_sweep/a3_boundary_w05/
 
 状态：已完成。
 
-### 1. 修正目的
+### 1. 目的
 
-早期 A3 tuning 使用 test set 做过多组横向比较，包括 boundary weight、oversampling、Focal Tversky 和 threshold。这些结果现在保留为 exploratory analysis，但不再作为严格 final model/config 的选择依据。
+A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
-修正后的严格流程：
+流程：
 
 ```text
 train split: 训练 checkpoint
@@ -1789,7 +1598,7 @@ val split  : 选择模型设置和 threshold
 test split : 只对最终固定配置做一次泛化评估
 ```
 
-指标统一为 per-sample mean，避免旧脚本中 batch mean 和 per-sample mean 混用。
+指标统一为 per-sample mean。
 
 ### 2. 新脚本
 

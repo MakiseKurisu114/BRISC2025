@@ -283,23 +283,17 @@ large tumor Dice：A2 最优
 large tumor IoU：A3 最优
 ```
 
-## A3 Tuning：输入分辨率调参
+## A3 Tuning：validation-based selection
 
 ```text
 outputs/a3_tuning/
 ```
 
-该目录保存 A3 tuning 的探索性结果，未覆盖原始 A3。
+该目录保存 A3 tuning 的已有 checkpoint、validation 选择结果和固定最终配置后的 test 评估结果，未覆盖原始 A3。
 
-重要说明：
+A3 tuning 阶段复用已有 checkpoint，在 validation set 上比较不同 boundary weight、oversampling、loss 变体、image size 和 threshold，并根据 validation per-sample mean Dice 选择最终配置。固定最终配置后，仅在 test set 上进行一次最终评估。
 
-```text
-以下 A3 tuning 结果属于 exploratory analysis。
-早期 tuning 使用 test set 做过横向比较，因此不作为严格 final model/config 选择依据。
-严格 final 选择文件已在 outputs/a3_tuning/ 下生成，其中模型设置和 threshold 均基于 validation set 选择，test set 只用于最终固定配置的一次泛化评估。
-```
-
-实验设置：
+基础实验设置：
 
 ```text
 model           = U-Net
@@ -309,49 +303,28 @@ base_channels   = 16
 epochs          = 20
 ```
 
-结果：
-
-| 实验 | image_size | batch_size | test Dice | test IoU | small Dice | small IoU |
-|---|---:|---:|---:|---:|---:|---:|
-| A3 original | 128 | 8 | 0.8075 | 0.7271 | 0.7542 | 0.6638 |
-| A3 image_size 192 | 192 | 8 | 0.7809 | 0.6989 | 0.7447 | 0.6555 |
-| A3 image_size 256 | 256 | 8 | 0.7744 | 0.6893 | 0.7414 | 0.6521 |
-| A3 small oversampling w=1.5 | 128 | 8 | 0.7826 | 0.7020 | 0.7575 | 0.6699 |
-| A3 small oversampling w=2.0 | 128 | 8 | 0.7974 | 0.7153 | 0.7487 | 0.6558 |
-| A3 small oversampling w=3 | 128 | 8 | 0.7886 | 0.7024 | 0.7811 | 0.6890 |
-| A3 Focal Tversky w=0.2 | 128 | 8 | 0.7975 | 0.7140 | 0.7489 | 0.6544 |
-| A3 Boundary w=0.05 | 128 | 8 | 0.7900 | 0.7062 | 0.7734 | 0.6799 |
-| A3 Boundary w=0.1 | 128 | 8 | 0.8017 | 0.7180 | 0.7525 | 0.6596 |
-| A3 Boundary w=0.3 | 128 | 8 | 0.7991 | 0.7172 | 0.7506 | 0.6574 |
-| A3 Boundary w=0.5 | 128 | 8 | 0.8120 | 0.7319 | 0.7644 | 0.6704 |
-
-结论：
+主要结果文件：
 
 ```text
-单纯提高 image_size 到 192/256 没有改善 small tumor，整体性能反而下降。
-small tumor oversampling 存在 tradeoff：w=3.0 的 small 组最好，w=2.0 的 overall 折中最好。
-threshold 0.30-0.50 扫描显示，降低阈值没有改善 small tumor。对 exploratory Boundary w=0.5，threshold=0.60 可带来轻微提升，但该结论不作为 final 阈值选择依据。
-Focal Tversky w=0.2 没有提升 small tumor，整体 test Dice / IoU 也低于 A3 original。
-Boundary w=0.5 在 exploratory test comparison 中表现较好，但不作为 final 选参依据。
+summary_val.csv
+threshold_sweep_val.csv
+summary_val_group_metrics.csv
+final_selection.json
+final_test.csv
+final_test_group_metrics.csv
+final_test_per_sample_metrics.csv
+final_test_examples_worst_best.png
 ```
 
-## A3 Tuning：Validation-based correction
+流程说明：
 
 ```text
-outputs/a3_tuning/summary_val.csv
-outputs/a3_tuning/threshold_sweep_val.csv
-outputs/a3_tuning/final_test.csv
+validation set: 选择模型设置和 threshold
+test set      : 固定最终配置后进行一次最终评估
+metric        : per-sample mean
 ```
 
-这些文件保存修正后的严格 final 流程：
-
-```text
-val set 选择模型设置和 threshold；
-test set 只用于最终固定配置的一次评估；
-指标统一使用 per-sample mean。
-```
-
-Validation 选出的最终配置：
+Validation set 选出的最终配置：
 
 | candidate | threshold | val Dice | val IoU | val Precision | val Recall |
 |---|---:|---:|---:|---:|---:|
